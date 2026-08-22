@@ -9,12 +9,17 @@ Provides:
   * GET  /api/v1/inventory/check
   * POST /api/v1/carrier/rates
   * GET  /api/v1/regulatory/hazmat
+- Live Shipments Telemetry & Alternate Route Endpoint:
+  * GET  /api/v1/shipments
+  * GET  /api/v1/shipments/{cargo_id}
 - Full Pipeline Endpoint: POST /api/v1/pipeline/reroute
 """
 
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
+import json
+import os
 
 from agent_2_navigator import (
     GraphRLNavigator,
@@ -51,6 +56,54 @@ app.add_middleware(
 navigator = GraphRLNavigator()
 validator = ConstraintValidator()
 
+# Load shipments JSON helper
+DATA_FILE_PATH = os.path.join(os.path.dirname(__file__), "backend", "data", "shipments.json")
+
+def load_shipments_data() -> Dict[str, Any]:
+    if os.path.exists(DATA_FILE_PATH):
+        with open(DATA_FILE_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    # Fallback in-memory shipment structure if file is missing
+    return {
+        "shipments": [
+            {
+                "cargo_id": "CONT-99482-SH",
+                "mode": "MARITIME",
+                "vessel_name": "COSCO SHIPPING GEMINI",
+                "origin": "PORT_SHANGHAI_01",
+                "destination": "PORT_ROTTERDAM_02",
+                "current_status": "BLOCKED_BY_STRIKE",
+                "current_coordinates": [31.2304, 121.4737],
+                "active_route_coords": [[31.23, 121.47], [22.31, 114.16], [1.29, 103.85], [26.6, 56.3], [12.5, 43.3], [29.9, 32.5], [51.9, 4.47]],
+                "metrics": {"transit_hours": 142.0, "cost_usd": 14200.0, "co2_kg": 1850.0, "sla_risk": "HIGH"},
+                "alternate_routes": [
+                    {
+                        "route_id": "ROUTE_ALT_A",
+                        "modal_sequence": ["ROAD_TRUCK", "RAIL_FREIGHT"],
+                        "waypoints": ["HUB_SHANGHAI", "HUB_WARSAW", "DIST_BERLIN"],
+                        "waypoint_coords": [[31.23, 121.47], [30.57, 104.07], [52.23, 21.01], [52.52, 13.4]],
+                        "estimated_transit_hours": 110.5,
+                        "base_freight_cost_usd": 18450.00,
+                        "co2_emissions_kg": 1240.5,
+                        "risk_grade": "LOW",
+                        "color_gradient": [56, 142, 60]
+                    },
+                    {
+                        "route_id": "ROUTE_ALT_B",
+                        "modal_sequence": ["MARITIME", "AIR_FREIGHT"],
+                        "waypoints": ["PORT_SHANGHAI", "AIR_DUBAI", "PORT_ROTTERDAM"],
+                        "waypoint_coords": [[31.23, 121.47], [25.2, 55.27], [51.9, 4.47]],
+                        "estimated_transit_hours": 165.0,
+                        "base_freight_cost_usd": 29100.00,
+                        "co2_emissions_kg": 3400.0,
+                        "risk_grade": "HIGH",
+                        "color_gradient": [211, 47, 47]
+                    }
+                ]
+            }
+        ]
+    }
+
 
 # --- Root / Health check ---
 
@@ -62,6 +115,24 @@ def read_root():
         "agents": ["Agent 2: Graph-RL Navigator", "Agent 3: Constraint Validator"],
         "version": "1.0.0"
     }
+
+
+# --- Live Shipments Endpoints ---
+
+@app.get("/api/v1/shipments")
+def get_all_shipments():
+    """GET /api/v1/shipments — Returns all active live tracked cargo shipments."""
+    return load_shipments_data()
+
+
+@app.get("/api/v1/shipments/{cargo_id}")
+def get_shipment_by_id(cargo_id: str):
+    """GET /api/v1/shipments/{cargo_id} — Returns detailed telemetry & alternate routes for cargo_id."""
+    data = load_shipments_data()
+    for shipment in data.get("shipments", []):
+        if shipment.get("cargo_id") == cargo_id:
+            return shipment
+    raise HTTPException(status_code=404, detail=f"Shipment with cargo_id '{cargo_id}' not found.")
 
 
 # --- Enterprise Mock Tool Endpoints (Required by Spec) ---
@@ -119,7 +190,6 @@ def run_full_pipeline(payload: DisruptionPayload, cargo_id: str = Query("CARGO_2
     """
     Orchestrates Agent 2 pathfinding -> Agent 3 constraint validation in sequence.
     """
-    # Step 1: Agent 2 Graph Pathfinding
     nav_response = navigator.calculate_candidates(
         origin=payload.origin,
         destination=payload.destination,
@@ -127,8 +197,6 @@ def run_full_pipeline(payload: DisruptionPayload, cargo_id: str = Query("CARGO_2
         blocked_edges=payload.blocked_edges,
         max_candidates=payload.max_candidates
     )
-
-    # Step 2: Agent 3 Tool Execution & Validation
     val_response = validator.validate_all(nav_response.candidates, cargo_id=cargo_id)
 
     return {

@@ -1,24 +1,47 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { DisruptionEvent, ActiveRoute } from '@/lib/supabase';
 
-// Port/hub coordinates for visualization
-const MAJOR_NODES: Record<string, { lat: number; lon: number; name: string; type: string }> = {
-  PORT_SHANGHAI_01: { lat: 31.23, lon: 121.47, name: 'Shanghai', type: 'port' },
-  PORT_ROTTERDAM_02: { lat: 51.9, lon: 4.47, name: 'Rotterdam', type: 'port' },
-  PORT_SINGAPORE_01: { lat: 1.35, lon: 103.82, name: 'Singapore', type: 'port' },
-  PORT_HAMBURG_01: { lat: 53.55, lon: 9.99, name: 'Hamburg', type: 'port' },
-  PORT_DUBAI_01: { lat: 25.2, lon: 55.27, name: 'Dubai (Jebel Ali)', type: 'port' },
-  PORT_LOSANGELES_01: { lat: 33.74, lon: -118.27, name: 'Los Angeles', type: 'port' },
-  PORT_ANTWERP_01: { lat: 51.26, lon: 4.4, name: 'Antwerp', type: 'port' },
-  PORT_BUSAN_01: { lat: 35.17, lon: 129.07, name: 'Busan', type: 'port' },
-  HUB_FRANKFURT_01: { lat: 50.11, lon: 8.68, name: 'Frankfurt Hub', type: 'hub' },
-  HUB_CHICAGO_01: { lat: 41.88, lon: -87.63, name: 'Chicago Hub', type: 'hub' },
-  HUB_MUMBAI_01: { lat: 19.08, lon: 72.88, name: 'Mumbai Hub', type: 'hub' },
-  RAIL_CHENGDU: { lat: 30.57, lon: 104.07, name: 'Chengdu Rail', type: 'rail' },
-  RAIL_WARSAW: { lat: 52.23, lon: 21.01, name: 'Warsaw Rail', type: 'rail' },
-  DIST_BERLIN: { lat: 52.52, lon: 13.4, name: 'Berlin Dist', type: 'dist' },
+export type LayerConfig = {
+  spaceports: boolean;
+  undersea_cables: boolean;
+  pipelines: boolean;
+  ai_datacenters: boolean;
+  military_activity: boolean;
+  ship_traffic: boolean;
+  trade_routes: boolean;
+  aviation: boolean;
+  protests: boolean;
+};
+
+export type AlternateRoute = {
+  route_id: string;
+  modal_sequence: string[];
+  waypoints: string[];
+  waypoint_coords: [number, number][];
+  estimated_transit_hours: number;
+  base_freight_cost_usd: number;
+  co2_emissions_kg: number;
+  risk_grade: 'LOW' | 'MODERATE' | 'HIGH';
+  color_gradient: [number, number, number];
+};
+
+export type Shipment = {
+  cargo_id: string;
+  mode: string;
+  vessel_name: string;
+  origin: string;
+  destination: string;
+  current_status: string;
+  current_coordinates: [number, number];
+  active_route_coords: [number, number][];
+  metrics: {
+    transit_hours: number;
+    cost_usd: number;
+    co2_kg: number;
+    sla_risk: string;
+  };
+  alternate_routes: AlternateRoute[];
 };
 
 // Mercator projection helper
@@ -30,42 +53,68 @@ function project(lat: number, lon: number, w: number, h: number): [number, numbe
   return [x, y];
 }
 
-// Sample routes for visualization
-const SAMPLE_ROUTES = [
-  { from: 'PORT_SHANGHAI_01', to: 'PORT_ROTTERDAM_02', mode: 'ocean', status: 'active' },
-  { from: 'PORT_SINGAPORE_01', to: 'PORT_DUBAI_01', mode: 'ocean', status: 'active' },
-  { from: 'PORT_BUSAN_01', to: 'PORT_LOSANGELES_01', mode: 'ocean', status: 'active' },
-  { from: 'PORT_ROTTERDAM_02', to: 'HUB_FRANKFURT_01', mode: 'road', status: 'active' },
-  { from: 'HUB_FRANKFURT_01', to: 'DIST_BERLIN', mode: 'road', status: 'active' },
-  { from: 'PORT_SHANGHAI_01', to: 'RAIL_CHENGDU', mode: 'rail', status: 'reroute' },
-  { from: 'RAIL_CHENGDU', to: 'RAIL_WARSAW', mode: 'rail', status: 'reroute' },
-  { from: 'RAIL_WARSAW', to: 'DIST_BERLIN', mode: 'road', status: 'reroute' },
-  { from: 'PORT_DUBAI_01', to: 'HUB_MUMBAI_01', mode: 'ocean', status: 'active' },
-  { from: 'PORT_ANTWERP_01', to: 'HUB_CHICAGO_01', mode: 'air', status: 'active' },
+// Tactical Map Overlay Data
+const HAZARD_ZONES = [
+  {
+    name: 'Red Sea / Gulf of Aden Blockade',
+    polygon: [
+      [27.0, 34.0], [20.0, 38.0], [12.0, 43.0], [11.5, 51.0], [15.0, 52.0], [22.0, 37.0]
+    ] as [number, number][],
+    risk: 'CRITICAL',
+  },
+  {
+    name: 'Strait of Hormuz Alert Area',
+    polygon: [
+      [27.5, 54.0], [26.0, 57.0], [24.5, 58.5], [25.0, 55.0]
+    ] as [number, number][],
+    risk: 'HIGH',
+  },
+  {
+    name: 'Taiwan Strait Exclusion Zone',
+    polygon: [
+      [26.0, 119.5], [25.5, 122.5], [22.5, 121.0], [23.0, 118.5]
+    ] as [number, number][],
+    risk: 'HIGH',
+  }
 ];
 
-const MODE_COLORS: Record<string, string> = {
-  ocean: '#60a5fa',
-  rail: '#4ade80',
-  road: '#fb923c',
-  air: '#e2e8f0',
-};
+const MILITARY_BASES: { name: string; coords: [number, number]; type: string }[] = [
+  { name: 'Al Udeid Air Base', coords: [25.11, 51.31], type: 'air_base' },
+  { name: 'Naval Support Activity Bahrain', coords: [26.20, 50.60], type: 'naval_base' },
+  { name: 'Diego Garcia Base', coords: [-7.31, 72.41], type: 'military' },
+  { name: 'Camp Lemonnier', coords: [11.54, 43.14], type: 'base' },
+  { name: 'Yokosuka Naval Base', coords: [35.29, 139.67], type: 'naval_base' },
+];
+
+const DATA_CENTERS: { name: string; coords: [number, number] }[] = [
+  { name: 'DC-Frankfurt-01', coords: [50.11, 8.68] },
+  { name: 'DC-Singapore-02', coords: [1.35, 103.82] },
+  { name: 'DC-Dubai-01', coords: [25.20, 55.27] },
+  { name: 'DC-Tokyo-01', coords: [35.67, 139.65] },
+];
 
 type Props = {
-  disruptions: DisruptionEvent[];
-  routes: ActiveRoute[];
+  shipments: Shipment[];
+  selectedShipment: Shipment | null;
+  activeAlternateRouteId: string | null;
+  layers: LayerConfig;
   width: number;
   height: number;
 };
 
-export default function WorldMap({ disruptions, routes, width, height }: Props) {
+export default function WorldMap({
+  shipments,
+  selectedShipment,
+  activeAlternateRouteId,
+  layers,
+  width,
+  height,
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animFrameRef = useRef<number>(0);
   const [tick, setTick] = useState(0);
 
-  // Animate
   useEffect(() => {
-    const interval = setInterval(() => setTick(t => t + 1), 50);
+    const interval = setInterval(() => setTick(t => t + 1), 40);
     return () => clearInterval(interval);
   }, []);
 
@@ -80,17 +129,18 @@ export default function WorldMap({ disruptions, routes, width, height }: Props) 
     canvas.width = W;
     canvas.height = H;
 
+    // Clear canvas
     ctx.clearRect(0, 0, W, H);
 
-    // Background gradient
-    const bg = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, W * 0.8);
-    bg.addColorStop(0, '#080c14');
-    bg.addColorStop(1, '#04060a');
-    ctx.fillStyle = bg;
+    // Deep Tactical Background
+    const bgGradient = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, W * 0.75);
+    bgGradient.addColorStop(0, '#0a0d14');
+    bgGradient.addColorStop(1, '#030508');
+    ctx.fillStyle = bgGradient;
     ctx.fillRect(0, 0, W, H);
 
-    // Grid lines (latitude/longitude)
-    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    // Latitude & Longitude Grid Lines
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
     ctx.lineWidth = 0.5;
     for (let lon = -180; lon <= 180; lon += 30) {
       const [x] = project(0, lon, W, H);
@@ -107,105 +157,180 @@ export default function WorldMap({ disruptions, routes, width, height }: Props) 
       ctx.stroke();
     }
 
-    // Draw animated arcs (routes)
-    const t = tick * 0.02;
-    SAMPLE_ROUTES.forEach((route, i) => {
-      const from = MAJOR_NODES[route.from];
-      const to = MAJOR_NODES[route.to];
-      if (!from || !to) return;
+    const timePhase = tick * 0.03;
 
-      const [x1, y1] = project(from.lat, from.lon, W, H);
-      const [x2, y2] = project(to.lat, to.lon, W, H);
-
-      const color = MODE_COLORS[route.mode];
-      const isReroute = route.status === 'reroute';
-
-      // Control point for arc
-      const mx = (x1 + x2) / 2;
-      const my = (y1 + y2) / 2 - Math.abs(x2 - x1) * 0.18;
-
-      // Draw the arc path
+    // 1. Draw Red Tactical Hazard Zones (Conflict / Blockade Polygons)
+    HAZARD_ZONES.forEach((zone) => {
+      if (zone.polygon.length < 3) return;
       ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.quadraticCurveTo(mx, my, x2, y2);
-      ctx.strokeStyle = isReroute
-        ? `rgba(250, 204, 21, 0.25)`
-        : `${color}22`;
-      ctx.lineWidth = isReroute ? 1.5 : 1;
-      ctx.setLineDash(isReroute ? [6, 4] : []);
+      const [startLat, startLon] = zone.polygon[0];
+      const [sx, sy] = project(startLat, startLon, W, H);
+      ctx.moveTo(sx, sy);
+
+      for (let i = 1; i < zone.polygon.length; i++) {
+        const [pLat, pLon] = zone.polygon[i];
+        const [px, py] = project(pLat, pLon, W, H);
+        ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+
+      // Shading & Dash border (matches attached World Monitor screenshot)
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.16)';
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
       ctx.stroke();
       ctx.setLineDash([]);
-
-      // Animated particle along the arc
-      const phase = (t + i * 0.3) % 1;
-      const px = (1 - phase) * (1 - phase) * x1 + 2 * (1 - phase) * phase * mx + phase * phase * x2;
-      const py = (1 - phase) * (1 - phase) * y1 + 2 * (1 - phase) * phase * my + phase * phase * y2;
-
-      ctx.beginPath();
-      ctx.arc(px, py, isReroute ? 3 : 2, 0, Math.PI * 2);
-      ctx.fillStyle = isReroute ? 'rgba(250, 204, 21, 0.9)' : color;
-      ctx.fill();
-
-      // Glow
-      ctx.beginPath();
-      ctx.arc(px, py, isReroute ? 7 : 5, 0, Math.PI * 2);
-      const glow = ctx.createRadialGradient(px, py, 0, px, py, isReroute ? 7 : 5);
-      glow.addColorStop(0, isReroute ? 'rgba(250,204,21,0.4)' : `${color}60`);
-      glow.addColorStop(1, 'transparent');
-      ctx.fillStyle = glow;
-      ctx.fill();
     });
 
-    // Draw nodes
-    Object.entries(MAJOR_NODES).forEach(([key, node]) => {
-      const [x, y] = project(node.lat, node.lon, W, H);
-
-      // Check if disrupted
-      const isDisrupted = disruptions.some(d => d.affected_node === key);
-      const isPredicted = key === 'PORT_ROTTERDAM_02'; // demo prediction
-
-      const color = isDisrupted
-        ? '#ef4444'
-        : isPredicted
-          ? '#eab308'
-          : '#94a3b8';
-
-      const radius = isDisrupted ? 5 : isPredicted ? 4 : 3;
-
-      // Pulse ring for disrupted/predicted
-      if (isDisrupted || isPredicted) {
-        const pulse = Math.abs(Math.sin(t * 2 + (isDisrupted ? 0 : 1)));
+    // 2. Draw Optional Layers (Pipelines, Military Activity, Data Centers)
+    if (layers.military_activity) {
+      MILITARY_BASES.forEach((base) => {
+        const [bx, by] = project(base.coords[0], base.coords[1], W, H);
+        // Triangle icon
         ctx.beginPath();
-        ctx.arc(x, y, radius + pulse * (isDisrupted ? 18 : 12), 0, Math.PI * 2);
-        ctx.strokeStyle = isDisrupted ? `rgba(239,68,68,${0.4 * (1 - pulse)})` : `rgba(234,179,8,${0.4 * (1 - pulse)})`;
-        ctx.lineWidth = 1;
-        ctx.stroke();
+        ctx.moveTo(bx, by - 5);
+        ctx.lineTo(bx - 4, by + 4);
+        ctx.lineTo(bx + 4, by + 4);
+        ctx.closePath();
+        ctx.fillStyle = '#60a5fa';
+        ctx.fill();
+
+        ctx.font = '8px JetBrains Mono, monospace';
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.6)';
+        ctx.fillText(base.name, bx + 6, by + 3);
+      });
+    }
+
+    if (layers.ai_datacenters) {
+      DATA_CENTERS.forEach((dc) => {
+        const [dx, dy] = project(dc.coords[0], dc.coords[1], W, H);
+        ctx.fillStyle = '#a855f7';
+        ctx.fillRect(dx - 3, dy - 3, 6, 6);
+
+        ctx.font = '8px JetBrains Mono, monospace';
+        ctx.fillStyle = 'rgba(168, 85, 247, 0.7)';
+        ctx.fillText(dc.name, dx + 6, dy + 3);
+      });
+    }
+
+    // 3. Draw All Shipments & Trade Routes (ArcLayer & Dynamic Gradients)
+    shipments.forEach((shipment) => {
+      const isSelected = selectedShipment?.cargo_id === shipment.cargo_id;
+      const coords = shipment.active_route_coords;
+
+      // Draw Main Active Trade Route Arc
+      if (layers.trade_routes && coords.length > 1) {
+        for (let i = 0; i < coords.length - 1; i++) {
+          const [lat1, lon1] = coords[i];
+          const [lat2, lon2] = coords[i + 1];
+          const [x1, y1] = project(lat1, lon1, W, H);
+          const [x2, y2] = project(lat2, lon2, W, H);
+
+          const mx = (x1 + x2) / 2;
+          const my = (y1 + y2) / 2 - Math.abs(x2 - x1) * 0.15;
+
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.quadraticCurveTo(mx, my, x2, y2);
+
+          // Route color: Cyan for normal, Red for blocked
+          const isBlocked = shipment.current_status.includes('BLOCKED') || shipment.current_status.includes('DELAY');
+          ctx.strokeStyle = isBlocked
+            ? 'rgba(239, 68, 68, 0.4)'
+            : isSelected
+              ? 'rgba(56, 189, 248, 0.8)'
+              : 'rgba(56, 189, 248, 0.25)';
+          ctx.lineWidth = isSelected ? 2 : 1;
+          ctx.stroke();
+
+          // Animated particle flow
+          const phase = (timePhase + i * 0.4) % 1;
+          const px = (1 - phase) * (1 - phase) * x1 + 2 * (1 - phase) * phase * mx + phase * phase * x2;
+          const py = (1 - phase) * (1 - phase) * y1 + 2 * (1 - phase) * phase * my + phase * phase * y2;
+
+          ctx.beginPath();
+          ctx.arc(px, py, isSelected ? 3 : 2, 0, Math.PI * 2);
+          ctx.fillStyle = isBlocked ? '#ef4444' : '#38bdf8';
+          ctx.fill();
+        }
       }
 
-      // Node dot
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.fillStyle = color;
-      ctx.fill();
+      // Draw Alternate Routes with Dynamic Color Gradients (Green, Amber, Red)
+      if (isSelected && shipment.alternate_routes) {
+        shipment.alternate_routes.forEach((altRoute) => {
+          const isAltActive = activeAlternateRouteId === altRoute.route_id;
+          const [r, g, b] = altRoute.color_gradient || [56, 142, 60];
+          const colorStr = `rgb(${r}, ${g}, ${b})`;
+          const waypoints = altRoute.waypoint_coords;
 
-      // Glow
-      const nodeGlow = ctx.createRadialGradient(x, y, 0, x, y, radius * 3);
-      nodeGlow.addColorStop(0, `${color}50`);
-      nodeGlow.addColorStop(1, 'transparent');
-      ctx.beginPath();
-      ctx.arc(x, y, radius * 3, 0, Math.PI * 2);
-      ctx.fillStyle = nodeGlow;
-      ctx.fill();
+          if (waypoints && waypoints.length > 1) {
+            for (let i = 0; i < waypoints.length - 1; i++) {
+              const [lat1, lon1] = waypoints[i];
+              const [lat2, lon2] = waypoints[i + 1];
+              const [x1, y1] = project(lat1, lon1, W, H);
+              const [x2, y2] = project(lat2, lon2, W, H);
 
-      // Label for major nodes
-      if (node.type === 'port') {
-        ctx.font = '9px Inter, sans-serif';
-        ctx.fillStyle = isDisrupted ? '#ef4444' : 'rgba(255,255,255,0.45)';
-        ctx.fillText(node.name, x + radius + 3, y + 3);
+              const mx = (x1 + x2) / 2;
+              const my = (y1 + y2) / 2 - Math.abs(x2 - x1) * 0.22;
+
+              ctx.beginPath();
+              ctx.moveTo(x1, y1);
+              ctx.quadraticCurveTo(mx, my, x2, y2);
+              ctx.strokeStyle = isAltActive ? colorStr : `rgba(${r}, ${g}, ${b}, 0.35)`;
+              ctx.lineWidth = isAltActive ? 2.5 : 1.5;
+              ctx.setLineDash([6, 4]);
+              ctx.stroke();
+              ctx.setLineDash([]);
+
+              // Glowing particles on active alternate route
+              if (isAltActive) {
+                const phase = (timePhase * 1.2 + i * 0.3) % 1;
+                const px = (1 - phase) * (1 - phase) * x1 + 2 * (1 - phase) * phase * mx + phase * phase * x2;
+                const py = (1 - phase) * (1 - phase) * y1 + 2 * (1 - phase) * phase * my + phase * phase * y2;
+
+                ctx.beginPath();
+                ctx.arc(px, py, 4, 0, Math.PI * 2);
+                ctx.fillStyle = colorStr;
+                ctx.fill();
+              }
+            }
+          }
+        });
       }
+
+      // 4. Draw Vessel / Package Live Coordinates (ScatterplotLayer / Pulsing Node)
+      const [curLat, curLon] = shipment.current_coordinates;
+      const [cx, cy] = project(curLat, curLon, W, H);
+      const isBlocked = shipment.current_status.includes('BLOCKED') || shipment.current_status.includes('DELAY');
+
+      const nodeColor = isBlocked ? '#ef4444' : '#38bdf8';
+      const pulseSize = Math.abs(Math.sin(timePhase * 3)) * (isBlocked ? 22 : 14);
+
+      // Pulse Outer Ring
+      ctx.beginPath();
+      ctx.arc(cx, cy, 6 + pulseSize, 0, Math.PI * 2);
+      ctx.strokeStyle = isBlocked
+        ? `rgba(239, 68, 68, ${0.5 * (1 - pulseSize / 22)})`
+        : `rgba(56, 189, 248, ${0.5 * (1 - pulseSize / 14)})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Node Circle
+      ctx.beginPath();
+      ctx.arc(cx, cy, isSelected ? 6 : 4, 0, Math.PI * 2);
+      ctx.fillStyle = nodeColor;
+      ctx.fill();
+
+      // Label
+      ctx.font = '10px JetBrains Mono, monospace';
+      ctx.fillStyle = isSelected ? '#ffffff' : 'rgba(226, 232, 240, 0.7)';
+      ctx.fillText(`${shipment.cargo_id} (${shipment.vessel_name})`, cx + 10, cy + 4);
     });
 
-  }, [tick, disruptions, routes, width, height]);
+  }, [tick, shipments, selectedShipment, activeAlternateRouteId, layers, width, height]);
 
   return (
     <canvas

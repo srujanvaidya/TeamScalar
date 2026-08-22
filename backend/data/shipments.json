@@ -1,0 +1,136 @@
+{
+  "shipments": [
+    {
+      "cargo_id": "CONT-99482-SH",
+      "mode": "MARITIME",
+      "vessel_name": "COSCO SHIPPING GEMINI",
+      "origin": "PORT_SHANGHAI_01",
+      "destination": "PORT_ROTTERDAM_02",
+      "current_status": "BLOCKED_BY_STRIKE",
+      "current_coordinates": [31.2304, 121.4737],
+      "active_route_coords": [
+        [31.23, 121.47],
+        [22.31, 114.16],
+        [1.29, 103.85],
+        [26.6, 56.3],
+        [12.5, 43.3],
+        [29.9, 32.5],
+        [51.9, 4.47]
+      ],
+      "metrics": {
+        "transit_hours": 142.0,
+        "cost_usd": 14200.0,
+        "co2_kg": 1850.0,
+        "sla_risk": "HIGH"
+      },
+      "alternate_routes": [
+        {
+          "route_id": "ROUTE_ALT_A",
+          "modal_sequence": ["ROAD_TRUCK", "RAIL_FREIGHT"],
+          "waypoints": ["HUB_SHANGHAI", "HUB_WARSAW", "DIST_BERLIN"],
+          "waypoint_coords": [
+            [31.23, 121.47],
+            [30.57, 104.07],
+            [52.23, 21.01],
+            [52.52, 13.4]
+          ],
+          "estimated_transit_hours": 110.5,
+          "base_freight_cost_usd": 18450.00,
+          "co2_emissions_kg": 1240.5,
+          "risk_grade": "LOW",
+          "color_gradient": [56, 142, 60]
+        },
+        {
+          "route_id": "ROUTE_ALT_B",
+          "modal_sequence": ["MARITIME", "AIR_FREIGHT"],
+          "waypoints": ["PORT_SHANGHAI", "AIR_DUBAI", "PORT_ROTTERDAM"],
+          "waypoint_coords": [
+            [31.23, 121.47],
+            [25.2, 55.27],
+            [51.9, 4.47]
+          ],
+          "estimated_transit_hours": 165.0,
+          "base_freight_cost_usd": 29100.00,
+          "co2_emissions_kg": 3400.0,
+          "risk_grade": "HIGH",
+          "color_gradient": [211, 47, 47]
+        }
+      ]
+    },
+    {
+      "cargo_id": "CONT-48192-DXB",
+      "mode": "MARITIME",
+      "vessel_name": "MAERSK MC-KINNEY MOLLER",
+      "origin": "PORT_SINGAPORE_01",
+      "destination": "PORT_DUBAI_01",
+      "current_status": "IN_TRANSIT",
+      "current_coordinates": [1.3521, 103.8198],
+      "active_route_coords": [
+        [1.35, 103.82],
+        [5.9, 80.2],
+        [19.08, 72.88],
+        [25.2, 55.27]
+      ],
+      "metrics": {
+        "transit_hours": 72.0,
+        "cost_usd": 8400.0,
+        "co2_kg": 980.0,
+        "sla_risk": "LOW"
+      },
+      "alternate_routes": [
+        {
+          "route_id": "ROUTE_ALT_C",
+          "modal_sequence": ["MARITIME"],
+          "waypoints": ["PORT_SINGAPORE", "HUB_MUMBAI", "PORT_DUBAI"],
+          "waypoint_coords": [
+            [1.35, 103.82],
+            [19.08, 72.88],
+            [25.2, 55.27]
+          ],
+          "estimated_transit_hours": 68.0,
+          "base_freight_cost_usd": 9200.00,
+          "co2_emissions_kg": 850.0,
+          "risk_grade": "LOW",
+          "color_gradient": [56, 142, 60]
+        }
+      ]
+    },
+    {
+      "cargo_id": "CONT-33109-LAX",
+      "mode": "MARITIME",
+      "vessel_name": "EVER GIVEN",
+      "origin": "PORT_BUSAN_01",
+      "destination": "PORT_LOSANGELES_01",
+      "current_status": "WEATHER_DELAY",
+      "current_coordinates": [35.1796, 129.0756],
+      "active_route_coords": [
+        [35.17, 129.07],
+        [35.0, 160.0],
+        [33.74, -118.27]
+      ],
+      "metrics": {
+        "transit_hours": 210.0,
+        "cost_usd": 19500.0,
+        "co2_kg": 2400.0,
+        "sla_risk": "MODERATE"
+      },
+      "alternate_routes": [
+        {
+          "route_id": "ROUTE_ALT_D",
+          "modal_sequence": ["MARITIME", "RAIL_FREIGHT"],
+          "waypoints": ["PORT_BUSAN", "PORT_VANCOUVER", "HUB_CHICAGO"],
+          "waypoint_coords": [
+            [35.17, 129.07],
+            [49.28, -123.12],
+            [41.88, -87.63]
+          ],
+          "estimated_transit_hours": 195.0,
+          "base_freight_cost_usd": 21200.00,
+          "co2_emissions_kg": 2100.0,
+          "risk_grade": "MODERATE",
+          "color_gradient": [245, 158, 11]
+        }
+      ]
+    }
+  ]
+}
