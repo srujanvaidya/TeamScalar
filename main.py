@@ -2,6 +2,7 @@ import os
 import json
 import uvicorn
 from typing import List, Optional, Dict, Any
+from pydantic import BaseModel
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -316,6 +317,46 @@ def api_blockchain_status():
         "supabase_connection": "healthy",
         "wallet_address": OWNER_ADDRESS or "0x0000000000000000000000000000000000000000"
     }
+
+# --- Multi-Modal & Inventory Allocation Endpoints ---
+@app.get("/demo/full-funnel-vip-air-bridge", response_model=OrchestrationResult)
+async def demo_full_funnel_vip_air_bridge():
+    context = ShipmentContext(
+        container_id="CNTR-VIP-AIR-901",
+        origin_node="PORT_SHANGHAI_01",
+        destination_node="PORT_ROTTERDAM_02",
+        cargo_type="ELECTRONICS",
+        is_hazmat=False,
+        baseline_cost_usd=40000.0,
+        sla_deadline_epoch=1787349283,
+        default_corridor_path=["PORT_SHANGHAI_01", "CORRIDOR_TAIWAN_STRAIT", "PORT_ROTTERDAM_02"],
+        customer_tier="TIER_1_VIP"
+    )
+    disruption_text = "CRITICAL ALERT: Shanghai Port Dockworkers Strike has closed down Port Operations."
+    return await orchestrator.run_shipment_mission(context, inject_disruption_text=disruption_text)
+
+@app.get("/demo/full-funnel-inventory-reallocation", response_model=OrchestrationResult)
+async def demo_full_funnel_inventory_reallocation():
+    context = ShipmentContext(
+        container_id="CNTR-INVENTORY-REALLOCATION-303",
+        origin_node="PORT_SHANGHAI_01",
+        destination_node="PORT_ROTTERDAM_02",
+        cargo_type="ELECTRONICS",
+        is_hazmat=False,
+        baseline_cost_usd=40000.0,
+        sla_deadline_epoch=1787349283,
+        default_corridor_path=["PORT_SHANGHAI_01", "CORRIDOR_TAIWAN_STRAIT", "PORT_ROTTERDAM_02"],
+        customer_tier="TIER_1_VIP"
+    )
+    # Block origin node fully by strike
+    disruption_text = "CRITICAL ALERT: Shanghai Port Dockworkers Strike has closed down Port Operations."
+    # We will trigger the same strike, but let's see if it falls back to the WH_SINGAPORE warehouse stock fulfillment route!
+    return await orchestrator.run_shipment_mission(context, inject_disruption_text=disruption_text)
+
+@app.get("/api/v1/inventory/status")
+def api_inventory_status():
+    from src.tools.inventory_allocator import WarehouseInventoryManager
+    return WarehouseInventoryManager.inventory
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -96,4 +96,37 @@ class MultimodalNavigatorAgent:
                 "estimated_transit_hours": c.estimated_transit_hours,
                 "base_freight_cost_usd": c.base_freight_cost_usd
             })
+
+        # Inject multimodal strategy variations if disruptions occur
+        if active_disruptions:
+            # 1. Sea-Rail Intermodal Link
+            candidates_list.append({
+                "route_id": "ROUTE_ALT_RAIL",
+                "modal_sequence": ["ROAD_TRUCK", "RAIL_FREIGHT", "ROAD_TRUCK"],
+                "waypoints": ["HUB_SHANGHAI", "RAIL_CHENGDU", "HUB_WARSAW", "DIST_BERLIN"],
+                "estimated_transit_hours": 72.0,
+                "base_freight_cost_usd": 15000.0
+            })
+            
+            # 2. Air-Bridge Fast Track
+            candidates_list.append({
+                "route_id": "ROUTE_ALT_AIR",
+                "modal_sequence": ["AIR_CARGO"],
+                "waypoints": [origin, "HUB_FRANKFURT_01", destination],
+                "estimated_transit_hours": 12.0,
+                "base_freight_cost_usd": 42000.0
+            })
+
+            # 3. Warehouse Stock Fulfillment (Localized stock re-allocation)
+            from src.tools.inventory_allocator import WarehouseInventoryManager
+            wh_plan = WarehouseInventoryManager.check_stock_availability("SKU-PRECISION-SEMI-808", 500, origin, exclude_nodes=blocked_nodes + [origin])
+            if wh_plan:
+                candidates_list.append({
+                    "route_id": "ROUTE_ALT_REALLOCATION",
+                    "modal_sequence": ["ROAD_TRUCK"],
+                    "waypoints": [wh_plan["warehouse_id"], destination],
+                    "estimated_transit_hours": wh_plan["dispatch_readiness_hours"],
+                    "base_freight_cost_usd": wh_plan["transfer_cost_usd"]
+                })
+
         return candidates_list
