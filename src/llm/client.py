@@ -142,6 +142,13 @@ class MockLLMClient(BaseLLMClient):
             elif "low" in prompt_lower:
                 severity = Severity.LOW
 
+            # Extract the actual news text inside prompt to avoid matching instruction nodes
+            news_text = prompt
+            news_match = re.search(r"--- NEWS ITEM ---\s*([\s\S]*?)\s*-----------------", prompt)
+            if news_match:
+                news_text = news_match.group(1)
+            news_lower = news_text.lower()
+
             # Default mocked entity attributes
             mock_data = {
                 "event_id": f"evt_{abs(hash(prompt)) % 10000:04d}",
@@ -149,15 +156,23 @@ class MockLLMClient(BaseLLMClient):
                 "event_type": "disruption" if "type" not in prompt_lower else "CustomEvent",
                 "severity": severity,
                 "confidence": 0.95,
-                "description": f"Mocked disruption event extracted from prompt: {prompt[:60]}...",
+                "description": f"Mocked disruption event: {news_text[:120]}...",
                 "metadata": {"mocked": True}
             }
-            
-            # Simple keyword matching heuristics for events
+
             affected_nodes = []
-            for node_key in ["PORT_SHANGHAI_01", "PORT_ROTTERDAM_02", "CORRIDOR_SUEZ_CANAL", "PORT_LOS_ANGELES"]:
-                if node_key.lower() in prompt_lower:
+            for node_key in ["PORT_SHANGHAI_01", "PORT_ROTTERDAM_02", "CORRIDOR_SUEZ_CANAL", "PORT_LOS_ANGELES", "CORRIDOR_TAIWAN_STRAIT"]:
+                if node_key.lower() in news_lower:
                     affected_nodes.append(node_key)
+            if not affected_nodes:
+                if "shanghai" in news_lower:
+                    affected_nodes.append("PORT_SHANGHAI_01")
+                if "rotterdam" in news_lower:
+                    affected_nodes.append("PORT_ROTTERDAM_02")
+                if "suez" in news_lower:
+                    affected_nodes.append("CORRIDOR_SUEZ_CANAL")
+                if "taiwan" in news_lower:
+                    affected_nodes.append("CORRIDOR_TAIWAN_STRAIT")
 
             if "strike" in prompt_lower:
                 mock_data["event_type"] = "Labor Strike"
