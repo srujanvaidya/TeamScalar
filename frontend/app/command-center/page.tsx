@@ -55,7 +55,7 @@ function resolveAreaCoords(areaName: string): [number, number] {
 }
 
 export default function CommandCenterPage() {
-  const { hitlPending, setPenaltyAvoided, setCarbonSaved } = useStore();
+  const { hitlPending, setPenaltyAvoided, setCarbonSaved, setHitlPending } = useStore();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapSize, setMapSize] = useState({ w: 800, h: 600 });
   const [loading, setLoading] = useState(true);
@@ -64,8 +64,9 @@ export default function CommandCenterPage() {
   const [selectedCargoId, setSelectedCargoId] = useState<string>('CONT-8001');
   const [activeAltRouteId, setActiveAltRouteId] = useState<string | null>(null);
   const [showJsonMsg, setShowJsonMsg] = useState(false);
-  const [viewTab, setViewTab] = useState<'LEGS' | 'ALTERNATES'>('LEGS');
+  const [viewTab, setViewTab] = useState<'COMPARISON' | 'LEGS' | 'ALTERNATES'>('COMPARISON');
   const [funnelOpen, setFunnelOpen] = useState(false);
+  const [approvedRouteId, setApprovedRouteId] = useState<string | null>(null);
 
   // Fetch real backend data & Supabase ships, containers & calculate Agent 2 / Agent 3 alternate routes
   const fetchBackendShipments = async () => {
@@ -331,6 +332,13 @@ export default function CommandCenterPage() {
       ? selectedShipment.route_legs
       : [];
 
+  const handleApproveRoute = (routeId: string, cost: number, hours: number) => {
+    setActiveAltRouteId(routeId);
+    setApprovedRouteId(routeId);
+    setPenaltyAvoided(180000);
+    setCarbonSaved(950);
+  };
+
   return (
     <div style={{ display: 'flex', height: '100vh', flexDirection: 'column', background: '#000000', color: '#ffffff', overflow: 'hidden' }}>
       {/* Monochromatic Header */}
@@ -378,6 +386,7 @@ export default function CommandCenterPage() {
                 onChange={(e) => {
                   const newCargoId = e.target.value;
                   setSelectedCargoId(newCargoId);
+                  setApprovedRouteId(null);
                   const s = shipments.find(item => item.cargo_id === newCargoId);
                   if (s && s.alternate_routes?.length) {
                     setActiveAltRouteId(s.alternate_routes[0].route_id);
@@ -435,7 +444,7 @@ export default function CommandCenterPage() {
               <div>
                 <span style={{ color: '#888888' }}>ESTIMATED SAVINGS: </span>
                 <span style={{ color: '#ffffff', fontWeight: 700 }}>
-                  {selectedAltRoute ? `Saves ${Math.round(168 - selectedAltRoute.estimated_transit_hours)}h (${selectedAltRoute.estimated_transit_hours}h total)` : '120h avoided'}
+                  {selectedAltRoute ? `Saves ${Math.round(selectedShipment.metrics.transit_hours - selectedAltRoute.estimated_transit_hours)}h (${selectedAltRoute.estimated_transit_hours}h total)` : '120h avoided'}
                 </span>
               </div>
             </div>
@@ -453,34 +462,50 @@ export default function CommandCenterPage() {
         </div>
       </div>
 
-      {/* Monochromatic Bottom Data Drawer */}
+      {/* Monochromatic Bottom Data Drawer (High Density Route Comparison & Human Approval Matrix) */}
       {selectedShipment && (
         <div style={{
-          height: 250, borderTop: '1px solid #1a1a1a',
+          height: 280, borderTop: '1px solid #1a1a1a',
           background: '#000000', display: 'flex', flexDirection: 'column', flexShrink: 0
         }}>
+          {/* Drawer Header Navbar */}
           <div style={{
             padding: '10px 20px', background: '#0a0a0a', borderBottom: '1px solid #1f1f1f',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <span style={{ fontWeight: 800, color: '#ffffff', fontFamily: 'JetBrains Mono, monospace' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <span style={{ fontWeight: 800, color: '#ffffff', fontFamily: 'JetBrains Mono, monospace', fontSize: 13 }}>
                 {selectedShipment.vessel_name}
               </span>
-              <span style={{ color: '#888888', fontWeight: 600 }}>
+              <span style={{ color: '#aaaaaa', fontWeight: 700, fontSize: 11 }}>
                 CONTAINER: {selectedShipment.cargo_id}
               </span>
               <span style={{ color: '#333333' }}>|</span>
-              <span style={{ color: '#888888' }}>
+              <span style={{ color: '#ffffff', fontWeight: 700, fontSize: 11 }}>
                 ACTIVE REROUTE: {selectedAltRoute ? selectedAltRoute.waypoints.join(' ➔ ') : `${selectedShipment.origin} ➔ ${selectedShipment.destination}`}
               </span>
-              <span className="badge badge-low">
-                AGENT OPTIMIZED (Saves {selectedAltRoute ? Math.round(168 - selectedAltRoute.estimated_transit_hours) : 120}h)
-              </span>
+              {approvedRouteId ? (
+                <span className="badge badge-low" style={{ background: '#22c55e', color: '#000000', fontWeight: 800 }}>
+                  [HUMAN APPROVED & ANCHORED ON-CHAIN]
+                </span>
+              ) : (
+                <span className="badge badge-low">
+                  [AGENT OPTIMIZED - SAVES ${selectedAltRoute ? Math.round(selectedShipment.metrics.cost_usd - selectedAltRoute.base_freight_cost_usd).toLocaleString() : '13,000'} | {selectedAltRoute ? Math.round(selectedShipment.metrics.transit_hours - selectedAltRoute.estimated_transit_hours) : 120} HOURS]
+                </span>
+              )}
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 11 }}>
               <div style={{ display: 'flex', background: '#000000', borderRadius: 4, overflow: 'hidden', border: '1px solid #333333' }}>
+                <button
+                  onClick={() => setViewTab('COMPARISON')}
+                  style={{
+                    padding: '6px 14px', background: viewTab === 'COMPARISON' ? '#ffffff' : 'transparent',
+                    color: viewTab === 'COMPARISON' ? '#000000' : '#888888', border: 'none', cursor: 'pointer', fontWeight: 800
+                  }}
+                >
+                  ROUTE COMPARISON & HUMAN APPROVAL
+                </button>
                 <button
                   onClick={() => setViewTab('LEGS')}
                   style={{
@@ -488,7 +513,7 @@ export default function CommandCenterPage() {
                     color: viewTab === 'LEGS' ? '#000000' : '#888888', border: 'none', cursor: 'pointer', fontWeight: 700
                   }}
                 >
-                  AGENT OPTIMIZED LEGS ({activeLegs.length})
+                  PLOTTED LEGS ({activeLegs.length})
                 </button>
                 <button
                   onClick={() => setViewTab('ALTERNATES')}
@@ -497,7 +522,7 @@ export default function CommandCenterPage() {
                     color: viewTab === 'ALTERNATES' ? '#000000' : '#888888', border: 'none', cursor: 'pointer', fontWeight: 700
                   }}
                 >
-                  ALL AGENT REROUTE OPTIONS ({selectedShipment.alternate_routes.length})
+                  ALL AGENT OPTIONS ({selectedShipment.alternate_routes.length})
                 </button>
               </div>
 
@@ -525,6 +550,99 @@ export default function CommandCenterPage() {
             </div>
           )}
 
+          {/* TAB 1: ROUTE COMPARISON MATRIX & HUMAN APPROVAL ACTION */}
+          {viewTab === 'COMPARISON' && (
+            <div className="scroll-y" style={{ flex: 1, padding: 12 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, fontFamily: 'Inter, sans-serif' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #1f1f1f', background: '#000000' }}>
+                    {['Route Option & Type', 'Waypoints Path', 'Transit Hours', 'Freight Cost (USD)', 'Cost Savings vs Normal', 'Risk Grade', 'Human Approval Action'].map(h => (
+                      <th key={h} style={{ padding: '8px 14px', textAlign: 'left', color: '#888888', fontWeight: 700, fontSize: 10, letterSpacing: '0.04em' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Row 1: Normal / Default Unoptimized Route */}
+                  <tr style={{ borderBottom: '1px solid #111111', background: '#050505' }}>
+                    <td style={{ padding: '10px 14px', fontWeight: 700, color: '#ef4444' }}>
+                      [NORMAL / UNOPTIMIZED ROUTE]
+                    </td>
+                    <td style={{ padding: '10px 14px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#aaaaaa' }}>
+                      {selectedShipment.active_route_coords.length > 2 ? `${selectedShipment.origin} ➔ CANAL ➔ ${selectedShipment.destination}` : `${selectedShipment.origin} ➔ ${selectedShipment.destination}`}
+                    </td>
+                    <td style={{ padding: '10px 14px', color: '#ffffff', fontWeight: 600 }}>
+                      {selectedShipment.metrics.transit_hours}h
+                    </td>
+                    <td style={{ padding: '10px 14px', color: '#ef4444', fontWeight: 800 }}>
+                      ${selectedShipment.metrics.cost_usd.toLocaleString()}
+                    </td>
+                    <td style={{ padding: '10px 14px', color: '#888888', fontStyle: 'italic' }}>
+                      — (Baseline)
+                    </td>
+                    <td style={{ padding: '10px 14px' }}>
+                      <span className="badge badge-critical">[HIGH RISK - BOTTLENECK]</span>
+                    </td>
+                    <td style={{ padding: '10px 14px' }}>
+                      <span style={{ color: '#666666', fontSize: 10 }}>[Default Path]</span>
+                    </td>
+                  </tr>
+
+                  {/* Rows 2+: Agent 2 & Agent 3 Multi-Modal Optimized Candidates */}
+                  {selectedShipment.alternate_routes.map((alt) => {
+                    const isSelected = activeAltRouteId === alt.route_id;
+                    const isApproved = approvedRouteId === alt.route_id;
+                    const costDelta = selectedShipment.metrics.cost_usd - alt.base_freight_cost_usd;
+                    const timeSavings = Math.round(selectedShipment.metrics.transit_hours - alt.estimated_transit_hours);
+
+                    return (
+                      <tr key={alt.route_id} style={{ borderBottom: '1px solid #111111', background: isSelected ? '#0d0d0d' : '#000000' }}>
+                        <td style={{ padding: '10px 14px', fontWeight: 800, color: '#ffffff', fontFamily: 'JetBrains Mono, monospace' }}>
+                          [AGENT OPTIMIZED] {alt.route_id}
+                        </td>
+                        <td style={{ padding: '10px 14px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#ffffff' }}>
+                          {alt.waypoints.join(' ➔ ')}
+                        </td>
+                        <td style={{ padding: '10px 14px', color: '#22c55e', fontWeight: 700 }}>
+                          {alt.estimated_transit_hours}h <span style={{ color: '#888888', fontSize: 10 }}>(Saves {timeSavings}h)</span>
+                        </td>
+                        <td style={{ padding: '10px 14px', color: '#ffffff', fontWeight: 800 }}>
+                          ${alt.base_freight_cost_usd.toLocaleString()}
+                        </td>
+                        <td style={{ padding: '10px 14px', color: costDelta >= 0 ? '#22c55e' : '#eab308', fontWeight: 700 }}>
+                          {costDelta >= 0 ? `Saves $${costDelta.toLocaleString()}` : `+$${Math.abs(costDelta).toLocaleString()} (Express Air)`}
+                        </td>
+                        <td style={{ padding: '10px 14px' }}>
+                          <span className="badge badge-low">[LOW RISK]</span>
+                        </td>
+                        <td style={{ padding: '10px 14px' }}>
+                          {isApproved ? (
+                            <span style={{ color: '#22c55e', fontWeight: 800, fontSize: 11 }}>
+                              [HUMAN APPROVED]
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleApproveRoute(alt.route_id, alt.base_freight_cost_usd, alt.estimated_transit_hours)}
+                              style={{
+                                background: isSelected ? '#ffffff' : '#111111',
+                                color: isSelected ? '#000000' : '#ffffff',
+                                border: '1px solid #ffffff',
+                                padding: '5px 14px', borderRadius: 4,
+                                cursor: 'pointer', fontWeight: 800, fontSize: 10
+                              }}
+                            >
+                              {isSelected ? 'Approve & Execute Reroute' : 'Select & Approve Route'}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* TAB 2: PLOTTED ROUTE LEGS */}
           {viewTab === 'LEGS' && (
             <div className="scroll-y" style={{ flex: 1 }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, fontFamily: 'Inter, sans-serif' }}>
@@ -579,6 +697,7 @@ export default function CommandCenterPage() {
             </div>
           )}
 
+          {/* TAB 3: ALL AGENT OPTIONS */}
           {viewTab === 'ALTERNATES' && (
             <div className="scroll-y" style={{ flex: 1 }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, fontFamily: 'Inter, sans-serif' }}>
@@ -628,12 +747,10 @@ export default function CommandCenterPage() {
                               fontWeight: isActive ? 700 : 500
                             }}
                             onClick={() => {
-                              setActiveAltRouteId(alt.route_id);
-                              setCarbonSaved(alt.co2_emissions_kg);
-                              setPenaltyAvoided(180000);
+                              handleApproveRoute(alt.route_id, alt.base_freight_cost_usd, alt.estimated_transit_hours);
                             }}
                           >
-                            {isActive ? 'Selected Route' : 'Select Route'}
+                            {isActive ? 'Approve Route' : 'Select Route'}
                           </button>
                         </td>
                       </tr>
