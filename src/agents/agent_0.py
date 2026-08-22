@@ -42,6 +42,7 @@ class OrchestrationResult(BaseModel):
     origin_coordinates: List[float] = Field(default_factory=list, description="Origin GPS coordinates [lat, lon]")
     destination_coordinates: List[float] = Field(default_factory=list, description="Destination GPS coordinates [lat, lon]")
     transit_distance_nm: float = Field(default=0.0, description="Nautical miles distance between origin and destination")
+    blockchain_receipt: Optional[Dict[str, Any]] = Field(None, description="Blockchain transaction anchor receipt metadata")
 
 class MasterOrchestratorAgent:
     def __init__(self):
@@ -177,6 +178,20 @@ class MasterOrchestratorAgent:
         dest_coords = [dest_port.latitude, dest_port.longitude] if dest_port else [0.0, 0.0]
         dist_nm = registry.compute_maritime_distance_nm(context.origin_node, context.destination_node)
 
+        # Step 7: Blockchain Provenance Anchoring (via bridge adapter)
+        blockchain_receipt = None
+        if reroute_selected and eval_res.decision == "AUTO_APPROVE":
+            from src.blockchain.bridge_adapter import BlockchainBridge
+            blockchain_receipt = await BlockchainBridge.anchor_reroute_decision(
+                ship_id=context.container_id,
+                location=context.origin_node,
+                route_ports=proposed_path,
+                decision_metadata={
+                    "proposed_cost": proposed_cost,
+                    "audit_hash": audit_hash
+                }
+            )
+
         return OrchestrationResult(
             shipment_id=context.container_id,
             active_disruptions=active_disruptions,
@@ -191,5 +206,6 @@ class MasterOrchestratorAgent:
             execution_status=status,
             origin_coordinates=origin_coords,
             destination_coordinates=dest_coords,
-            transit_distance_nm=dist_nm
+            transit_distance_nm=dist_nm,
+            blockchain_receipt=blockchain_receipt
         )

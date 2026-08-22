@@ -292,5 +292,30 @@ def api_route_distance(
         "maritime_distance_nm": distance_nm
     }
 
+class BlockchainRerouteRequest(BaseModel):
+    ship_id: str
+    location: str
+    route: List[str]
+
+@app.post("/api/v1/blockchain/reroute")
+async def api_blockchain_reroute(payload: BlockchainRerouteRequest):
+    from src.blockchain.bridge_adapter import BlockchainBridge
+    receipt = await BlockchainBridge.anchor_reroute_decision(
+        ship_id=payload.ship_id,
+        location=payload.location,
+        route_ports=payload.route
+    )
+    return receipt
+
+@app.get("/api/v1/blockchain/status")
+def api_blockchain_status():
+    from blockchain.config import OWNER_ADDRESS
+    # Standard health details
+    return {
+        "polygon_rpc": "http://mock.polygon.amoy" if not os.getenv("RPC_URL") else "connected",
+        "supabase_connection": "healthy",
+        "wallet_address": OWNER_ADDRESS or "0x0000000000000000000000000000000000000000"
+    }
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

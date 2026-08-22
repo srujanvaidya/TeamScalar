@@ -27,3 +27,6 @@ dist/
 
 # Sub-repo backup if any
 TeamScalar/
+
+.env
+
