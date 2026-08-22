@@ -52,29 +52,28 @@ export default function WorldMap({
   const mapInstanceRef = useRef<any>(null);
   const layerGroupRef = useRef<any>(null);
 
-  // Initialize Leaflet Map
+  // Initialize Leaflet Map exactly as in provided spec template
   useEffect(() => {
     if (!mapContainerRef.current) return;
     if (mapInstanceRef.current) return;
 
-    // Import Leaflet dynamically on client
     import('leaflet').then((L) => {
       if (!mapContainerRef.current || mapInstanceRef.current) return;
 
+      // Initialize map view
       const map = L.map(mapContainerRef.current, {
-        center: [25.0, 45.0],
+        center: [20.0, 30.0],
         zoom: 3,
         zoomControl: false,
         attributionControl: false,
       });
 
-      // Add CartoDB Dark Matter Tile Layer (Monochromatic Dark World Map)
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      // OpenStreetMap tile layer (inverted via CSS .leaflet-tile-pane for black monochromatic look)
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        subdomains: 'abcd',
       }).addTo(map);
 
-      // Add Zoom Control at bottom right
+      // Add Zoom Controls
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
       const layerGroup = L.layerGroup().addTo(map);
@@ -93,7 +92,7 @@ export default function WorldMap({
     };
   }, []);
 
-  // Update Map layers when selected shipment or route changes
+  // Update map features when selected shipment or alternate route changes
   useEffect(() => {
     if (!mapInstanceRef.current || !layerGroupRef.current) return;
 
@@ -102,7 +101,6 @@ export default function WorldMap({
     });
   }, [selectedShipment, activeAlternateRouteId]);
 
-  // Render ONLY the selected vehicle location and its route (strictly monochromatic, NO blue)
   const renderMapElements = (
     L: any,
     map: any,
@@ -115,25 +113,21 @@ export default function WorldMap({
 
     const isBlocked = shipment.current_status.includes('BLOCKED') || shipment.current_status.includes('DELAY');
     const [curLat, curLon] = shipment.current_coordinates;
+    const bounds = L.latLngBounds();
 
-    // 1. Draw Active Route Line (Monochromatic Silver/White, NO BLUE)
+    // 1. Draw Active Route Line (Monochromatic White / Red)
     const activeCoords = shipment.active_route_coords.map(([lat, lon]) => [lat, lon] as [number, number]);
     if (activeCoords.length > 1) {
-      const routePolyline = L.polyline(activeCoords, {
+      const activePolyline = L.polyline(activeCoords, {
         color: isBlocked ? '#ef4444' : '#ffffff',
-        weight: 3,
-        opacity: 0.85,
-        lineCap: 'round',
-        lineJoin: 'round',
+        weight: 4,
+        opacity: 0.9,
       }).addTo(layerGroup);
 
-      // Fit map bounds to show full route cleanly
-      try {
-        map.fitBounds(routePolyline.getBounds(), { padding: [50, 50], maxZoom: 6 });
-      } catch {}
+      activeCoords.forEach(c => bounds.extend(c));
     }
 
-    // 2. Draw Selected Alternate Route Line (if active)
+    // 2. Draw Selected Alternate Route Line (Dashed)
     if (altRouteId && shipment.alternate_routes) {
       const alt = shipment.alternate_routes.find((r) => r.route_id === altRouteId);
       if (alt && alt.waypoint_coords && alt.waypoint_coords.length > 1) {
@@ -142,75 +136,58 @@ export default function WorldMap({
         L.polyline(altCoords, {
           color: alt.risk_grade === 'HIGH' ? '#ef4444' : alt.risk_grade === 'MODERATE' ? '#f59e0b' : '#22c55e',
           weight: 3,
-          opacity: 0.9,
           dashArray: '8, 6',
-          lineCap: 'round',
-          lineJoin: 'round',
+          opacity: 0.9,
         }).addTo(layerGroup);
+
+        altCoords.forEach(c => bounds.extend(c));
       }
     }
 
-    // 3. Draw Vehicle Marker (Strictly Monochromatic White/Red pulsing circle, NO BLUE)
-    const vehicleIcon = L.divIcon({
-      className: 'vehicle-marker',
-      html: `
-        <div style="
-          position: relative;
-          width: 20px;
-          height: 20px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        ">
-          <div style="
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: ${isBlocked ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255, 255, 255, 0.3)'};
-            animation: pulse-ring 1.5s ease-out infinite;
-          "></div>
-          <div style="
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: ${isBlocked ? '#ef4444' : '#ffffff'};
-            box-shadow: 0 0 10px ${isBlocked ? '#ef4444' : '#ffffff'};
-          "></div>
-        </div>
-      `,
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
-    });
+    // 3. Draw Vehicle Circle Marker (Red if blocked, White if active)
+    const vehicleMarker = L.circleMarker([curLat, curLon], {
+      radius: 9,
+      fillColor: isBlocked ? 'red' : '#ffffff',
+      color: '#ffffff',
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.9,
+    }).addTo(layerGroup);
 
-    const marker = L.marker([curLat, curLon], { icon: vehicleIcon }).addTo(layerGroup);
+    bounds.extend([curLat, curLon]);
 
-    // Vehicle Tooltip
-    marker.bindTooltip(
-      `<div style="font-family: monospace; font-size: 11px; padding: 2px 4px; background: #000; color: #fff; border: 1px solid #333; border-radius: 4px;">
+    // Popup Tooltip
+    vehicleMarker.bindTooltip(
+      `<div style="font-family: monospace; font-size: 11px; padding: 4px 8px; background: #000; color: #fff; border: 1px solid #444; border-radius: 4px;">
         <strong>${shipment.cargo_id}</strong> (${shipment.vessel_name})<br/>
         Status: <span style="color: ${isBlocked ? '#ef4444' : '#22c55e'}">${shipment.current_status}</span>
       </div>`,
       { permanent: true, direction: 'top', offset: [0, -10] }
     );
+
+    // Auto-fit map view to bounds
+    try {
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 7 });
+      }
+    } catch {}
   };
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', background: '#000' }}>
+    <div style={{ position: 'relative', width: '100%', height: '100%', background: '#000000' }}>
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
-      {/* Pulse ring keyframe CSS */}
+      {/* Invert OpenStreetMap Tile Pane into Monochromatic Black Map (Exact template CSS) */}
       <style jsx global>{`
-        @keyframes pulse-ring {
-          0% { transform: scale(0.6); opacity: 1; }
-          100% { transform: scale(2.2); opacity: 0; }
-        }
         .leaflet-container {
           background: #000000 !important;
           font-family: inherit;
         }
-        .leaflet-tile {
-          filter: brightness(85%) contrast(110%) !important;
+        .leaflet-tile-pane {
+          filter: grayscale(100%) invert(100%) contrast(120%) !important;
+        }
+        .leaflet-control-attribution {
+          display: none !important;
         }
       `}</style>
     </div>
