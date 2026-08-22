@@ -8,6 +8,7 @@ const navItems = [
   { href: '/command-center', label: 'Command Center' },
   { href: '/audit-explorer', label: 'Audit Explorer' },
   { href: '/chaos-panel', label: 'Chaos Panel' },
+  { href: '/workflow', label: 'Workflow' },
 ];
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -87,7 +88,7 @@ export default function Sidebar() {
             >
               <span>{item.label}</span>
               
-              {/* Right-hand solid active vertical indicator bar (matching screenshot style in pure white) */}
+              {/* Right-hand solid active vertical indicator bar */}
               {active && (
                 <div style={{
                   position: 'absolute',
