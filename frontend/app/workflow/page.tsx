@@ -3,32 +3,51 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
 import { useRouter } from 'next/navigation';
+import { 
+  Cpu, Database, ShieldCheck, Activity, Layers, Lock, 
+  Play, RotateCcw, MoreVertical, Sliders, Link2, Grid, Hand, MousePointer,
+  CheckCircle2, AlertTriangle, Clock, ArrowRight, X, ChevronRight
+} from 'lucide-react';
 
-type NodeStatus = 'idle' | 'processing' | 'completed' | 'approval_required' | 'rejected';
+type NodeStatus = 'idle' | 'executing' | 'completed' | 'approval_required';
 
-type WorkflowNode = {
+type N8nNode = {
   id: string;
-  stageNumber: string;
+  stageLabel: string;
   title: string;
-  agentRole: string;
-  agentId: string;
+  subtitle: string;
+  icon: any;
   status: NodeStatus;
-  summaryOutput: string;
+  x: number;
+  y: number;
+  badgeText: string;
+  stats: { inputs: number; processed: number; outputs: number; latencyMs: number };
   inputPayload: Record<string, any>;
   reasoning: string[];
   toolsInvoked: string[];
   outputPayload: Record<string, any>;
 };
 
-const INITIAL_NODES: WorkflowNode[] = [
+type Connection = {
+  fromId: string;
+  toId: string;
+  label: string;
+  fromPort?: 'bottom' | 'right' | 'left';
+  toPort?: 'top' | 'left' | 'right';
+};
+
+const INITIAL_N8N_NODES: N8nNode[] = [
   {
     id: 'agent_0',
-    stageNumber: 'STAGE 01',
-    title: 'Agent 0: Master Mission Orchestrator',
-    agentRole: 'ORCHESTRATOR',
-    agentId: 'agent_0',
+    stageLabel: 'STAGE 01',
+    title: 'Agent 0: Master Orchestrator',
+    subtitle: 'Initializing Mission Context & Data',
+    icon: Cpu,
     status: 'completed',
-    summaryOutput: 'Shipment context ingested. Target: CNTR-SHA-BOM-9921 (Origin: PORT_SHANGHAI_01 ➔ Destination: PORT_ROTTERDAM_02). Baseline Cost: $42,000.',
+    x: 450,
+    y: 40,
+    badgeText: 'Completed',
+    stats: { inputs: 1, processed: 1, outputs: 2, latencyMs: 12 },
     inputPayload: {
       container_id: 'CNTR-SHA-BOM-9921',
       origin_node: 'PORT_SHANGHAI_01',
@@ -58,50 +77,83 @@ const INITIAL_NODES: WorkflowNode[] = [
     }
   },
   {
-    id: 'agent_1a_1b',
-    stageNumber: 'STAGE 02',
-    title: 'Agent 1A & 1B: Threat Perception & AIS Telemetry',
-    agentRole: 'PERCEPTION',
-    agentId: 'agent_1',
+    id: 'agent_1a',
+    stageLabel: 'STAGE 02A',
+    title: 'Agent 1A: News Semantic NLP',
+    subtitle: 'Parsing RSS Labor Strike Data',
+    icon: Database,
     status: 'completed',
-    summaryOutput: 'Labor strike & weather anomaly detected. Event: Shanghai Dockworkers Strike (Severity: CRITICAL, Lat: 31.23, Lon: 121.47).',
+    x: 180,
+    y: 200,
+    badgeText: 'Completed',
+    stats: { inputs: 1, processed: 14, outputs: 1, latencyMs: 85 },
     inputPayload: {
-      shipment_id: 'CNTR-SHA-BOM-9921',
-      active_corridor: ['PORT_SHANGHAI_01', 'CORRIDOR_TAIWAN_STRAIT', 'PORT_ROTTERDAM_02']
+      source_feed: 'RSS_GLOBAL_MARITIME_NEWS',
+      target_port: 'PORT_SHANGHAI_01'
     },
     reasoning: [
       'Agent 1A scanned NLP news RSS feed: "Shanghai Port Dockworkers Strike shut down container berths."',
-      'Agent 1B evaluated Open-Meteo vessel telemetry: Wind 62.0 knots, Wave height 7.5m in Taiwan Strait.',
-      'Constructed Unified Disruption Triage Event (INC_8821). Severity: CRITICAL.',
-      'Marked PORT_SHANGHAI_01 berth node as BLOCKED_BY_STRIKE.'
+      'Identified critical labor strike threat vector at PORT_SHANGHAI_01.',
+      'Constructed Threat Perception Payload for Agent 2 Pathfinder.'
     ],
     toolsInvoked: [
       'NewsSemanticParserAgent.parse_article(rss_feed_text)',
-      'WeatherTelemetryAgent.fetch_corridor_weather(lat=31.23, lon=121.47)'
+      'ThreatVectorExtractor.extract_entities()'
     ],
     outputPayload: {
-      disruption_event: {
-        event_id: 'INC_8821',
-        event_type: 'LABOR_STRIKE',
-        severity: 'CRITICAL',
-        blocked_nodes: ['PORT_SHANGHAI_01'],
-        estimated_delay_hours: 48.0
-      }
+      threat_type: 'LABOR_STRIKE',
+      severity: 'CRITICAL',
+      blocked_node: 'PORT_SHANGHAI_01',
+      delay_hours: 48.0
+    }
+  },
+  {
+    id: 'agent_1b',
+    stageLabel: 'STAGE 02B',
+    title: 'Agent 1B: Environmental Telemetry',
+    subtitle: 'Ingesting AIS & Storm Radar',
+    icon: Activity,
+    status: 'completed',
+    x: 720,
+    y: 200,
+    badgeText: 'Completed',
+    stats: { inputs: 1, processed: 88, outputs: 1, latencyMs: 64 },
+    inputPayload: {
+      lat: 31.2304,
+      lon: 121.4737,
+      radius_km: 500
+    },
+    reasoning: [
+      'Agent 1B evaluated Open-Meteo vessel telemetry: Wind 62.0 knots, Wave height 7.5m in Taiwan Strait.',
+      'Calculated sea transit penalty multiplier: x3.8 for Maritime vessels.',
+      'Forwarded environmental anomaly telemetry to Agent 2 Pathfinder.'
+    ],
+    toolsInvoked: [
+      'WeatherTelemetryAgent.fetch_corridor_weather(lat=31.23, lon=121.47)',
+      'AISVesselTracker.get_wave_height_anomaly()'
+    ],
+    outputPayload: {
+      wave_height_m: 7.5,
+      wind_speed_knots: 62.0,
+      sea_transit_penalty_multiplier: 3.8
     }
   },
   {
     id: 'agent_2',
-    stageNumber: 'STAGE 03',
-    title: 'Agent 2: Multimodal Graph-RL Pathfinder',
-    agentRole: 'PATHFINDER',
-    agentId: 'agent_2',
+    stageLabel: 'STAGE 03',
+    title: 'Agent 2: Multimodal Pathfinder',
+    subtitle: 'Calculating NetworkX Dijkstra Bypass',
+    icon: Layers,
     status: 'completed',
-    summaryOutput: 'Pathfinder calculated 2 alternate bypass routes using NetworkX Dijkstra: ROUTE_ALT_901 (Intermodal Rail) & ROUTE_ALT_AIR (Express Air Cargo).',
+    x: 450,
+    y: 380,
+    badgeText: 'Completed',
+    stats: { inputs: 2, processed: 16, outputs: 2, latencyMs: 142 },
     inputPayload: {
       origin: 'PORT_SHANGHAI_01',
       destination: 'PORT_ROTTERDAM_02',
       blocked_nodes: ['PORT_SHANGHAI_01'],
-      max_candidates: 3
+      max_candidates: 2
     },
     reasoning: [
       'Ingested graph topology G=(V,E) with 16 nodes and weighted multimodal edges.',
@@ -135,12 +187,15 @@ const INITIAL_NODES: WorkflowNode[] = [
   },
   {
     id: 'agent_3',
-    stageNumber: 'STAGE 04',
-    title: 'Agent 3: Route Policy & SLA Constraint Validator',
-    agentRole: 'VALIDATOR',
-    agentId: 'agent_3',
+    stageLabel: 'STAGE 04',
+    title: 'Agent 3: Route Policy & SLA Validator',
+    subtitle: 'Ensuring Data & Inventory Accuracy',
+    icon: ShieldCheck,
     status: 'completed',
-    summaryOutput: 'Validation passed. Route ROUTE_ALT_901 verified for stock availability, berth channel depth, and VIP tier SLA deadline.',
+    x: 450,
+    y: 560,
+    badgeText: 'Completed',
+    stats: { inputs: 2, processed: 20, outputs: 1, latencyMs: 98 },
     inputPayload: {
       candidates: ['ROUTE_ALT_901', 'ROUTE_ALT_AIR'],
       cargo_type: 'ELECTRONICS',
@@ -169,12 +224,15 @@ const INITIAL_NODES: WorkflowNode[] = [
   },
   {
     id: 'agent_5',
-    stageNumber: 'STAGE 05',
-    title: 'Agent 5: Financial Risk & Safeguard Gate',
-    agentRole: 'SAFEGUARD',
-    agentId: 'agent_5',
+    stageLabel: 'STAGE 05',
+    title: 'Agent 5: Financial Safeguard Gate',
+    subtitle: 'Performing Financial Threshold Evaluation',
+    icon: Cpu,
     status: 'completed',
-    summaryOutput: 'Safeguard evaluation complete. Decision: AUTO_APPROVE. Cost delta: +$10,200 (Within $50,000 threshold ceiling).',
+    x: 450,
+    y: 740,
+    badgeText: 'Completed',
+    stats: { inputs: 1, processed: 12, outputs: 1, latencyMs: 45 },
     inputPayload: {
       plan_id: 'eval_CNTR-SHA-BOM-9921',
       baseline_cost_usd: 40000.0,
@@ -201,12 +259,15 @@ const INITIAL_NODES: WorkflowNode[] = [
   },
   {
     id: 'agent_4',
-    stageNumber: 'STAGE 06',
-    title: 'Agent 4: Polygon Amoy Cryptographic Settlement',
-    agentRole: 'BLOCKCHAIN ANCHOR',
-    agentId: 'agent_4',
+    stageLabel: 'STAGE 06',
+    title: 'Agent 4: Polygon Settlement Anchor',
+    subtitle: 'Automation & On-Chain Audit Complete',
+    icon: Lock,
     status: 'completed',
-    summaryOutput: 'Cryptographic provenance anchored on Polygon Amoy testnet. Tx Hash: 0x765eced85371f812d3a869d2b8c32c5a8c9f991ba8ee4c9c57595b6885dbbc27.',
+    x: 450,
+    y: 920,
+    badgeText: 'Completed',
+    stats: { inputs: 1, processed: 55, outputs: 1, latencyMs: 310 },
     inputPayload: {
       shipment_id: 'CNTR-SHA-BOM-9921',
       route_id: 'ROUTE_ALT_901',
@@ -214,7 +275,7 @@ const INITIAL_NODES: WorkflowNode[] = [
     },
     reasoning: [
       'Generated Keccak256 hash payload combining Agent 0, 1, 2, 3, and 5 audit trails.',
-      'Signed transaction with Polygon Amoy wallet owner key: 0x0000...0000.',
+      'Signed transaction with Polygon Amoy wallet owner key.',
       'Emitted state change event on Escrow Contract: 0xbe6E842E5CCD8752EF538B7874530F3bE702e8Ae.',
       'Receipt status: CONFIRMED_ON_CHAIN. Block #4829210.'
     ],
@@ -231,6 +292,16 @@ const INITIAL_NODES: WorkflowNode[] = [
   }
 ];
 
+const CONNECTIONS: Connection[] = [
+  { fromId: 'agent_0', toId: 'agent_1a', label: 'Initialize News Ingestion' },
+  { fromId: 'agent_0', toId: 'agent_1b', label: 'Setup Telemetry Ingestion' },
+  { fromId: 'agent_1a', toId: 'agent_2', label: 'Threat Vectors' },
+  { fromId: 'agent_1b', toId: 'agent_2', label: 'Weather Radar' },
+  { fromId: 'agent_2', toId: 'agent_3', label: 'Candidate Routes' },
+  { fromId: 'agent_3', toId: 'agent_5', label: 'Validated Policy' },
+  { fromId: 'agent_5', toId: 'agent_4', label: 'Approved Settlement' }
+];
+
 export default function WorkflowPage() {
   const { role } = useStore();
   const router = useRouter();
@@ -241,71 +312,102 @@ export default function WorkflowPage() {
     }
   }, [role, router]);
 
-  const [nodes, setNodes] = useState<WorkflowNode[]>(INITIAL_NODES);
-  const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({
-    agent_0: false,
-    agent_1a_1b: false,
-    agent_2: false,
-    agent_3: false,
-    agent_5: false,
-    agent_4: false
-  });
-  const [activeTabMap, setActiveTabMap] = useState<Record<string, 'SUMMARY' | 'INPUT' | 'REASONING' | 'TOOLS' | 'OUTPUT' | 'JSON'>>({
-    agent_0: 'SUMMARY',
-    agent_1a_1b: 'SUMMARY',
-    agent_2: 'SUMMARY',
-    agent_3: 'SUMMARY',
-    agent_5: 'SUMMARY',
-    agent_4: 'SUMMARY'
-  });
+  const [nodes, setNodes] = useState<N8nNode[]>(INITIAL_N8N_NODES);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [activeDrawerTab, setActiveDrawerTab] = useState<'SUMMARY' | 'INPUT' | 'REASONING' | 'TOOLS' | 'OUTPUT' | 'JSON'>('SUMMARY');
   const [executing, setExecuting] = useState(false);
 
-  const toggleExpand = (nodeId: string) => {
-    setExpandedNodes(prev => ({ ...prev, [nodeId]: !prev[nodeId] }));
-  };
-
-  const setNodeTab = (nodeId: string, tab: 'SUMMARY' | 'INPUT' | 'REASONING' | 'TOOLS' | 'OUTPUT' | 'JSON') => {
-    setActiveTabMap(prev => ({ ...prev, [nodeId]: tab }));
-  };
+  const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
 
   const runLiveSimulation = async (endpoint: string) => {
     setExecuting(true);
 
-    // Reset statuses to idle then processing sequentially
-    const resetNodes = nodes.map(n => ({ ...n, status: 'idle' as NodeStatus }));
-    setNodes(resetNodes);
+    // Reset all node statuses to idle then execute step-by-step
+    setNodes(prev => prev.map(n => ({ ...n, status: 'idle' as NodeStatus })));
 
     try {
       const res = await fetch(`http://localhost:8000${endpoint}`);
       if (res.ok) {
         const data = await res.json();
-        // Update nodes sequentially with animated delays
         for (let i = 0; i < nodes.length; i++) {
           await new Promise(r => setTimeout(r, 600));
           setNodes(prev => prev.map((nd, idx) => {
             if (idx === i) {
               return {
                 ...nd,
-                status: (i === 4 && data.safeguard_evaluation?.requires_human_approval) ? 'approval_required' : 'completed'
+                status: (i === 5 && data.safeguard_evaluation?.requires_human_approval) ? 'approval_required' : 'completed'
               };
             }
             if (idx === i + 1 && i < nodes.length - 1) {
-              return { ...nd, status: 'processing' };
+              return { ...nd, status: 'executing' };
             }
             return nd;
           }));
         }
       }
     } catch (e) {
-      console.warn('Backend live simulation fallback:', e);
+      console.warn('Backend simulation error:', e);
     }
 
     setExecuting(false);
   };
 
+  // Helper to generate cubic bezier curve path between node coordinates
+  const renderBezierCurve = (conn: Connection) => {
+    const fromNode = nodes.find(n => n.id === conn.fromId);
+    const toNode = nodes.find(n => n.id === conn.toId);
+    if (!fromNode || !toNode) return null;
+
+    // Node dimensions: width ~ 300px, height ~ 110px
+    const startX = fromNode.x + 150;
+    const startY = fromNode.y + 110;
+    const endX = toNode.x + 150;
+    const endY = toNode.y;
+
+    const controlY1 = startY + Math.abs(endY - startY) * 0.45;
+    const controlY2 = endY - Math.abs(endY - startY) * 0.45;
+
+    const d = `M ${startX} ${startY} C ${startX} ${controlY1}, ${endX} ${controlY2}, ${endX} ${endY}`;
+    const midX = (startX + endX) / 2;
+    const midY = (startY + endY) / 2;
+
+    const isExecuting = fromNode.status === 'executing' || toNode.status === 'executing';
+    const isCompleted = fromNode.status === 'completed' && (toNode.status === 'completed' || toNode.status === 'executing');
+
+    return (
+      <g key={`${conn.fromId}-${conn.toId}`}>
+        {/* Background Path Glow */}
+        <path
+          d={d}
+          fill="none"
+          stroke={isExecuting ? '#ffffff' : isCompleted ? '#333333' : '#1a1a1a'}
+          strokeWidth={isExecuting ? '3' : '2'}
+          strokeDasharray={isExecuting ? '6, 6' : undefined}
+          style={{
+            animation: isExecuting ? 'dash 1s linear infinite' : undefined,
+            transition: 'all 0.3s ease'
+          }}
+        />
+
+        {/* Connection Label Pill */}
+        <foreignObject x={midX - 60} y={midY - 12} width="120" height="24">
+          <div style={{
+            background: '#000000', border: isExecuting ? '1px solid #ffffff' : '1px solid #262626',
+            color: isExecuting ? '#ffffff' : '#888888', borderRadius: 12,
+            fontSize: 9, fontWeight: 700, textAlign: 'center', lineHeight: '20px',
+            fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.04em'
+          }}>
+            {conn.label}
+          </div>
+        </foreignObject>
+      </g>
+    );
+  };
+
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#000000', color: '#ffffff', overflow: 'hidden' }}>
-      {/* Monochromatic Top Control Bar */}
+      
+      {/* Top Header Control Bar */}
       <header style={{
         height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 24px', borderBottom: '1px solid #1a1a1a', background: '#000000',
@@ -313,10 +415,10 @@ export default function WorkflowPage() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <span style={{ fontWeight: 800, color: '#ffffff', letterSpacing: '0.06em', fontSize: 13 }}>
-            WORKFLOW INSPECTOR // N8N-STYLE AGENT DAG GRAPH CANVAS
+            N8N WORKFLOW INSPECTOR // AGENT DAG CANVAS
           </span>
           <span style={{ color: '#333333' }}>|</span>
-          <span style={{ color: '#888888', fontSize: 11 }}>DYNAMIC INTER-AGENT PIPELINE HANDOFFS</span>
+          <span style={{ color: '#888888', fontSize: 11 }}>DYNAMIC NODES & REAL-TIME CONNECTOR PATHS</span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -329,7 +431,7 @@ export default function WorkflowPage() {
               fontWeight: 800, cursor: executing ? 'not-allowed' : 'pointer'
             }}
           >
-            [Execute Strike Scenario]
+            [Execute Strike Workflow]
           </button>
 
           <button
@@ -341,7 +443,7 @@ export default function WorkflowPage() {
               fontWeight: 600, cursor: executing ? 'not-allowed' : 'pointer'
             }}
           >
-            [Execute Typhoon Scenario]
+            [Execute Typhoon Workflow]
           </button>
 
           <button
@@ -353,227 +455,262 @@ export default function WorkflowPage() {
               fontWeight: 600, cursor: executing ? 'not-allowed' : 'pointer'
             }}
           >
-            [Execute VIP Air-Bridge Scenario]
+            [Execute VIP Air-Bridge Workflow]
           </button>
         </div>
       </header>
 
-      {/* Main Canvas Area with Dark Grid Background */}
-      <div className="scroll-y" style={{
-        flex: 1, padding: '40px 60px', background: '#000000',
-        backgroundImage: 'radial-gradient(#1a1a1a 1px, transparent 1px)',
-        backgroundSize: '24px 24px', overflowY: 'auto'
-      }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 0, position: 'relative' }}>
-          
-          {nodes.map((node, index) => {
-            const isExpanded = !!expandedNodes[node.id];
-            const activeTab = activeTabMap[node.id] || 'SUMMARY';
-            const isLast = index === nodes.length - 1;
-            const isProcessing = node.status === 'processing';
+      {/* Main Canvas Container with Infinite Dot Grid Pattern */}
+      <div style={{ flex: 1, position: 'relative', overflow: 'auto', background: '#000000' }}>
+        
+        {/* Infinite Dot Grid Canvas Overlay */}
+        <div style={{
+          position: 'absolute', inset: 0, minWidth: 1200, minHeight: 1100,
+          backgroundImage: 'radial-gradient(#222222 1.5px, transparent 1.5px)',
+          backgroundSize: '20px 20px', pointerEvents: 'auto'
+        }}>
+
+          {/* SVG Connections Layer */}
+          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }}>
+            {CONNECTIONS.map(conn => renderBezierCurve(conn))}
+          </svg>
+
+          {/* Render 2D Spatial n8n Nodes */}
+          {nodes.map((node) => {
+            const Icon = node.icon;
+            const isSelected = selectedNodeId === node.id;
+            const isExecuting = node.status === 'executing';
             const isCompleted = node.status === 'completed';
             const isApprovalReq = node.status === 'approval_required';
 
             return (
-              <div key={node.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-                
-                {/* n8n Node Box Container */}
+              <div
+                key={node.id}
+                onClick={() => {
+                  setSelectedNodeId(node.id);
+                  setActiveDrawerTab('SUMMARY');
+                }}
+                style={{
+                  position: 'absolute',
+                  left: node.x,
+                  top: node.y,
+                  width: 300,
+                  background: '#050505',
+                  border: isSelected
+                    ? '1.5px solid #ffffff'
+                    : isExecuting
+                    ? '1.5px solid #ffffff'
+                    : isApprovalReq
+                    ? '1.5px solid #ef4444'
+                    : isCompleted
+                    ? '1px solid #262626'
+                    : '1px solid #141414',
+                  borderRadius: 12,
+                  boxShadow: isSelected
+                    ? '0 0 24px rgba(255, 255, 255, 0.2)'
+                    : isExecuting
+                    ? '0 0 20px rgba(255, 255, 255, 0.15)'
+                    : '0 8px 32px rgba(0, 0, 0, 0.8)',
+                  cursor: 'pointer',
+                  zIndex: 10,
+                  transition: 'all 0.2s ease',
+                  overflow: 'hidden'
+                }}
+              >
+                {/* Node Top Handle Header Bar */}
                 <div style={{
-                  width: '100%', background: '#050505',
-                  border: isProcessing ? '1px solid #ffffff' : isApprovalReq ? '1px solid #ef4444' : isCompleted ? '1px solid #333333' : '1px solid #1a1a1a',
-                  borderRadius: 8, transition: 'all 0.2s ease',
-                  boxShadow: isProcessing ? '0 0 20px rgba(255, 255, 255, 0.15)' : '0 8px 32px rgba(0,0,0,0.8)',
-                  overflow: 'hidden', zIndex: 10
+                  padding: '12px 14px', background: '#0a0a0a', borderBottom: '1px solid #1f1f1f',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between'
                 }}>
-                  {/* Node Header Handle Bar */}
-                  <div style={{
-                    padding: '14px 20px', background: '#0a0a0a', borderBottom: '1px solid #1f1f1f',
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <span style={{
-                        background: '#181818', border: '1px solid #333333', color: '#ffffff',
-                        fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 4,
-                        fontFamily: 'JetBrains Mono, monospace'
-                      }}>
-                        {node.stageNumber}
-                      </span>
-                      <h4 style={{ fontSize: 14, fontWeight: 800, color: '#ffffff', margin: 0 }}>
-                        {node.title}
-                      </h4>
-                      <span className="badge badge-neutral" style={{ fontSize: 9 }}>
-                        [{node.agentRole}]
-                      </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{
+                      width: 28, height: 28, borderRadius: 6, background: '#111111',
+                      border: '1px solid #333333', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>
+                      <Icon size={14} color="#ffffff" />
                     </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      {/* Node Status Badge */}
-                      {isProcessing && (
-                        <span className="badge badge-info" style={{ animation: 'pulse 1.5s infinite' }}>
-                          [PROCESSING...]
-                        </span>
-                      )}
-                      {isCompleted && (
-                        <span className="badge badge-low">
-                          [COMPLETED & LOCKED]
-                        </span>
-                      )}
-                      {isApprovalReq && (
-                        <span className="badge badge-critical">
-                          [HUMAN APPROVAL REQUIRED]
-                        </span>
-                      )}
-                      {node.status === 'idle' && (
-                        <span className="badge badge-neutral">
-                          [IDLE]
-                        </span>
-                      )}
-
-                      {/* Expand / Collapse Toggle Button */}
-                      <button
-                        onClick={() => toggleExpand(node.id)}
-                        style={{
-                          background: isExpanded ? '#ffffff' : '#111111',
-                          color: isExpanded ? '#000000' : '#ffffff',
-                          border: '1px solid #333333', padding: '4px 12px', borderRadius: 4,
-                          fontSize: 11, fontWeight: 800, cursor: 'pointer'
-                        }}
-                      >
-                        {isExpanded ? '[-] Collapse Node' : '[+] Expand Details'}
-                      </button>
+                    <div>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: '#888888', letterSpacing: '0.05em' }}>
+                        {node.stageLabel}
+                      </div>
+                      <div style={{ fontSize: 12, fontWeight: 800, color: '#ffffff' }}>
+                        {node.title.split(':')[1] || node.title}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Collapsed Node Content: Concise Summary */}
-                  {!isExpanded && (
-                    <div style={{ padding: '14px 20px', background: '#000000', fontSize: 12, color: '#cccccc', lineHeight: 1.5 }}>
-                      <span style={{ color: '#888888', fontWeight: 700, marginRight: 8, fontFamily: 'JetBrains Mono, monospace' }}>
-                        OUTPUT SUMMARY:
-                      </span>
-                      {node.summaryOutput}
-                    </div>
-                  )}
-
-                  {/* Expanded Node Content: Detailed Multi-Tab View */}
-                  {isExpanded && (
-                    <div style={{ padding: 20, background: '#000000', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                      {/* Sub-Tabs Bar */}
-                      <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid #1a1a1a', paddingBottom: 10 }}>
-                        {(['SUMMARY', 'INPUT', 'REASONING', 'TOOLS', 'OUTPUT', 'JSON'] as const).map(tab => (
-                          <button
-                            key={tab}
-                            onClick={() => setNodeTab(node.id, tab)}
-                            style={{
-                              background: activeTab === tab ? '#ffffff' : 'transparent',
-                              color: activeTab === tab ? '#000000' : '#888888',
-                              border: activeTab === tab ? '1px solid #ffffff' : '1px solid #222222',
-                              padding: '5px 12px', borderRadius: 4, fontSize: 10, fontWeight: 800, cursor: 'pointer'
-                            }}
-                          >
-                            [{tab}]
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Tab Content Display */}
-                      <div style={{ fontSize: 12, lineHeight: 1.6 }}>
-                        {activeTab === 'SUMMARY' && (
-                          <div style={{ background: '#050505', border: '1px solid #1a1a1a', padding: 14, borderRadius: 6, color: '#cccccc' }}>
-                            <div style={{ color: '#ffffff', fontWeight: 800, marginBottom: 4 }}>EXECUTED NODE SUMMARY</div>
-                            <div>{node.summaryOutput}</div>
-                          </div>
-                        )}
-
-                        {activeTab === 'INPUT' && (
-                          <div style={{ background: '#050505', border: '1px solid #1a1a1a', padding: 14, borderRadius: 6 }}>
-                            <div style={{ color: '#ffffff', fontWeight: 800, marginBottom: 6, fontSize: 11 }}>RECEIVED UPSTREAM INPUT PAYLOAD</div>
-                            <pre style={{ margin: 0, color: '#aaaaaa', fontFamily: 'JetBrains Mono, monospace', fontSize: 11, overflow: 'auto' }}>
-{JSON.stringify(node.inputPayload, null, 2)}
-                            </pre>
-                          </div>
-                        )}
-
-                        {activeTab === 'REASONING' && (
-                          <div style={{ background: '#050505', border: '1px solid #1a1a1a', padding: 14, borderRadius: 6 }}>
-                            <div style={{ color: '#ffffff', fontWeight: 800, marginBottom: 8, fontSize: 11 }}>INTERNAL AGENT REASONING & DECISION TRAIL</div>
-                            <ul style={{ margin: 0, paddingLeft: 18, color: '#cccccc', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                              {node.reasoning.map((step, sIdx) => (
-                                <li key={sIdx}>{step}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {activeTab === 'TOOLS' && (
-                          <div style={{ background: '#050505', border: '1px solid #1a1a1a', padding: 14, borderRadius: 6 }}>
-                            <div style={{ color: '#ffffff', fontWeight: 800, marginBottom: 8, fontSize: 11 }}>ENTERPRISE TOOLS & API CALLS INVOKED</div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                              {node.toolsInvoked.map((tool, tIdx) => (
-                                <div key={tIdx} style={{ background: '#111111', border: '1px solid #262626', padding: '6px 10px', borderRadius: 4, fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#ffffff' }}>
-                                  {tool}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {activeTab === 'OUTPUT' && (
-                          <div style={{ background: '#050505', border: '1px solid #1a1a1a', padding: 14, borderRadius: 6 }}>
-                            <div style={{ color: '#ffffff', fontWeight: 800, marginBottom: 6, fontSize: 11 }}>TRANSMITTED DOWNSTREAM OUTPUT PAYLOAD</div>
-                            <pre style={{ margin: 0, color: '#ffffff', fontFamily: 'JetBrains Mono, monospace', fontSize: 11, overflow: 'auto' }}>
-{JSON.stringify(node.outputPayload, null, 2)}
-                            </pre>
-                          </div>
-                        )}
-
-                        {activeTab === 'JSON' && (
-                          <div style={{ background: '#000000', border: '1px solid #222222', padding: 14, borderRadius: 6 }}>
-                            <div style={{ color: '#ffffff', fontWeight: 800, marginBottom: 6, fontSize: 11 }}>RAW INTER-AGENT JSON PAYLOAD INSPECTOR</div>
-                            <pre style={{ margin: 0, color: '#ffffff', background: '#050505', padding: 12, borderRadius: 4, fontFamily: 'JetBrains Mono, monospace', fontSize: 11, overflow: 'auto', border: '1px solid #1a1a1a' }}>
-{JSON.stringify({ input: node.inputPayload, output: node.outputPayload, reasoning: node.reasoning }, null, 2)}
-                            </pre>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                  {/* Status Pill Badge */}
+                  <span className={`badge ${isApprovalReq ? 'badge-critical' : isExecuting ? 'badge-info' : isCompleted ? 'badge-low' : 'badge-neutral'}`} style={{ fontSize: 9 }}>
+                    {node.badgeText}
+                  </span>
                 </div>
 
-                {/* n8n Dynamic Arrow Connector Line between nodes */}
-                {!isLast && (
-                  <div style={{ height: 48, width: 2, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {/* Background line */}
-                    <div style={{ position: 'absolute', top: 0, bottom: 0, width: 2, background: isCompleted ? '#ffffff' : '#222222' }} />
+                {/* Node Subtitle & Description */}
+                <div style={{ padding: '10px 14px', fontSize: 11, color: '#aaaaaa', lineHeight: 1.4 }}>
+                  {node.subtitle}
+                </div>
 
-                    {/* Dynamic Animated Dashed Arrow when processing */}
-                    {isProcessing && (
-                      <svg width="24" height="48" style={{ overflow: 'visible', zIndex: 5 }}>
-                        <line x1="12" y1="0" x2="12" y2="48" stroke="#ffffff" strokeWidth="2" strokeDasharray="6, 6" style={{ animation: 'dash 1s linear infinite' }} />
-                      </svg>
-                    )}
-
-                    {/* Arrow Head Indicator */}
-                    <div style={{
-                      position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)',
-                      width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent',
-                      borderTop: isCompleted ? '6px solid #ffffff' : '6px solid #444444', zIndex: 6
-                    }} />
+                {/* Node Bottom Metrics Stats Bar (n8n signature style) */}
+                <div style={{
+                  padding: '8px 14px', background: '#000000', borderTop: '1px solid #141414',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  fontSize: 10, fontFamily: 'JetBrains Mono, monospace', color: '#666666'
+                }}>
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <span>IN: <strong style={{ color: '#ffffff' }}>{node.stats.inputs}</strong></span>
+                    <span>PROC: <strong style={{ color: '#ffffff' }}>{node.stats.processed}</strong></span>
+                    <span>OUT: <strong style={{ color: '#ffffff' }}>{node.stats.outputs}</strong></span>
                   </div>
-                )}
+                  <span style={{ color: '#22c55e' }}>{node.stats.latencyMs}ms</span>
+                </div>
               </div>
             );
           })}
 
         </div>
+
+        {/* Floating Centered n8n Canvas Control Toolbar (signature n8n bottom bar) */}
+        <div style={{
+          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 40, background: '#050505', border: '1px solid #262626',
+          borderRadius: 30, padding: '6px 16px', display: 'flex', alignItems: 'center', gap: 16,
+          boxShadow: '0 12px 36px rgba(0,0,0,0.9)'
+        }}>
+          <button style={{ background: '#ffffff', border: 'none', borderRadius: 20, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <MousePointer size={14} color="#000000" />
+          </button>
+          <button style={{ background: 'transparent', border: 'none', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <Hand size={14} color="#888888" />
+          </button>
+          <div style={{ width: 1, height: 16, background: '#222222' }} />
+          <button style={{ background: 'transparent', border: 'none', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <Sliders size={14} color="#888888" />
+          </button>
+          <button style={{ background: 'transparent', border: 'none', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <Link2 size={14} color="#888888" />
+          </button>
+          <button style={{ background: 'transparent', border: 'none', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <Grid size={14} color="#888888" />
+          </button>
+        </div>
       </div>
+
+      {/* Expanded Node Configurations & Payload Inspector Modal Drawer */}
+      {selectedNode && (
+        <div style={{
+          position: 'fixed', top: 52, right: 0, bottom: 0, width: 480,
+          background: '#050505', borderLeft: '1px solid #1f1f1f', zIndex: 50,
+          display: 'flex', flexDirection: 'column', boxShadow: '-12px 0 40px rgba(0,0,0,0.9)'
+        }}>
+          {/* Drawer Header */}
+          <div style={{
+            padding: '16px 20px', borderBottom: '1px solid #1f1f1f', background: '#0a0a0a',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+          }}>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#888888' }}>
+                NODE CONFIGURATION & PAYLOAD INSPECTOR
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#ffffff', marginTop: 2 }}>
+                {selectedNode.title}
+              </div>
+            </div>
+
+            <button
+              onClick={() => setSelectedNodeId(null)}
+              style={{ background: '#111111', border: '1px solid #333333', color: '#ffffff', borderRadius: 4, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+            >
+              <X size={14} />
+            </button>
+          </div>
+
+          {/* Sub-Tabs Selector */}
+          <div style={{ padding: '10px 20px', borderBottom: '1px solid #1a1a1a', display: 'flex', gap: 6, background: '#000000' }}>
+            {(['SUMMARY', 'INPUT', 'REASONING', 'TOOLS', 'OUTPUT', 'JSON'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveDrawerTab(tab)}
+                style={{
+                  padding: '5px 10px', fontSize: 10, fontWeight: 800, borderRadius: 4, cursor: 'pointer',
+                  background: activeDrawerTab === tab ? '#ffffff' : 'transparent',
+                  color: activeDrawerTab === tab ? '#000000' : '#888888',
+                  border: activeDrawerTab === tab ? '1px solid #ffffff' : '1px solid #222222'
+                }}
+              >
+                [{tab}]
+              </button>
+            ))}
+          </div>
+
+          {/* Drawer Content Area */}
+          <div className="scroll-y" style={{ flex: 1, padding: 20, overflowY: 'auto', fontSize: 12, lineHeight: 1.6 }}>
+            {activeDrawerTab === 'SUMMARY' && (
+              <div style={{ background: '#0a0a0a', border: '1px solid #1a1a1a', padding: 16, borderRadius: 6, color: '#cccccc' }}>
+                <div style={{ color: '#ffffff', fontWeight: 800, marginBottom: 6 }}>EXECUTED NODE SUMMARY</div>
+                <div>{selectedNode.subtitle}</div>
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #1f1f1f', fontSize: 11 }}>
+                  Status: <strong style={{ color: '#22c55e' }}>{selectedNode.badgeText}</strong> | Latency: <strong style={{ color: '#ffffff' }}>{selectedNode.stats.latencyMs}ms</strong>
+                </div>
+              </div>
+            )}
+
+            {activeDrawerTab === 'INPUT' && (
+              <div style={{ background: '#0a0a0a', border: '1px solid #1a1a1a', padding: 16, borderRadius: 6 }}>
+                <div style={{ color: '#ffffff', fontWeight: 800, marginBottom: 8, fontSize: 11 }}>RECEIVED UPSTREAM INPUT PAYLOAD</div>
+                <pre style={{ margin: 0, color: '#aaaaaa', fontFamily: 'JetBrains Mono, monospace', fontSize: 11, overflow: 'auto' }}>
+{JSON.stringify(selectedNode.inputPayload, null, 2)}
+                </pre>
+              </div>
+            )}
+
+            {activeDrawerTab === 'REASONING' && (
+              <div style={{ background: '#0a0a0a', border: '1px solid #1a1a1a', padding: 16, borderRadius: 6 }}>
+                <div style={{ color: '#ffffff', fontWeight: 800, marginBottom: 10, fontSize: 11 }}>INTERNAL AGENT REASONING TRAIL</div>
+                <ul style={{ margin: 0, paddingLeft: 18, color: '#cccccc', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {selectedNode.reasoning.map((step, sIdx) => (
+                    <li key={sIdx}>{step}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {activeDrawerTab === 'TOOLS' && (
+              <div style={{ background: '#0a0a0a', border: '1px solid #1a1a1a', padding: 16, borderRadius: 6 }}>
+                <div style={{ color: '#ffffff', fontWeight: 800, marginBottom: 10, fontSize: 11 }}>ENTERPRISE TOOLS & APIS INVOKED</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {selectedNode.toolsInvoked.map((tool, tIdx) => (
+                    <div key={tIdx} style={{ background: '#111111', border: '1px solid #262626', padding: '8px 12px', borderRadius: 4, fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#ffffff' }}>
+                      {tool}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeDrawerTab === 'OUTPUT' && (
+              <div style={{ background: '#0a0a0a', border: '1px solid #1a1a1a', padding: 16, borderRadius: 6 }}>
+                <div style={{ color: '#ffffff', fontWeight: 800, marginBottom: 8, fontSize: 11 }}>TRANSMITTED DOWNSTREAM OUTPUT PAYLOAD</div>
+                <pre style={{ margin: 0, color: '#ffffff', fontFamily: 'JetBrains Mono, monospace', fontSize: 11, overflow: 'auto' }}>
+{JSON.stringify(selectedNode.outputPayload, null, 2)}
+                </pre>
+              </div>
+            )}
+
+            {activeDrawerTab === 'JSON' && (
+              <div style={{ background: '#000000', border: '1px solid #222222', padding: 16, borderRadius: 6 }}>
+                <div style={{ color: '#ffffff', fontWeight: 800, marginBottom: 8, fontSize: 11 }}>RAW INTER-AGENT JSON PAYLOAD</div>
+                <pre style={{ margin: 0, color: '#ffffff', background: '#050505', padding: 14, borderRadius: 4, fontFamily: 'JetBrains Mono, monospace', fontSize: 11, overflow: 'auto', border: '1px solid #1a1a1a' }}>
+{JSON.stringify({ input: selectedNode.inputPayload, output: selectedNode.outputPayload, reasoning: selectedNode.reasoning }, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <style jsx global>{`
         @keyframes dash {
           to { stroke-dashoffset: -24; }
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.4; }
         }
       `}</style>
     </div>
