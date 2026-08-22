@@ -12,6 +12,9 @@ export type RouteLeg = {
   mode: string;
   distance_km?: number;
   transit_hours?: number;
+  departure_time?: string;
+  arrival_time?: string;
+  tx_hash?: string;
   coords?: [number, number][];
 };
 
@@ -72,6 +75,14 @@ type Props = {
   activeAlternateRouteId: string | null;
   width: number;
   height: number;
+};
+
+const MODE_ICONS: Record<string, string> = {
+  ROAD_TRUCK: '🚚 ROAD TRUCK',
+  MARITIME: '🚢 OCEAN FREIGHT',
+  OCEAN_FREIGHT: '🚢 OCEAN FREIGHT',
+  RAIL_FREIGHT: '🚆 RAIL FREIGHT',
+  AIR_FREIGHT: '✈️ AIR FREIGHT',
 };
 
 export default function WorldMap({
@@ -143,51 +154,80 @@ export default function WorldMap({
     const [curLat, curLon] = shipment.current_coordinates;
     const bounds = L.latLngBounds();
 
-    // 1. Draw Active Route Line (Monochromatic White / Red)
+    // 1. Draw Active Route Segment Line with Hover Tooltip (Transport Mode, Node Names, Distance)
     const activeCoords = shipment.active_route_coords.map(([lat, lon]) => [lat, lon] as [number, number]);
     if (activeCoords.length > 1) {
-      L.polyline(activeCoords, {
+      const activePolyline = L.polyline(activeCoords, {
         color: isBlocked ? '#ef4444' : '#ffffff',
-        weight: 4,
+        weight: 5,
         opacity: 0.9,
       }).addTo(layerGroup);
+
+      const modeLabel = MODE_ICONS[shipment.mode] || `🚚 ${shipment.mode}`;
+      const txHash = shipment.blockchain_provenance?.tx_hash || 'Verified On-Chain';
+
+      activePolyline.bindTooltip(
+        `<div style="font-family: monospace; font-size: 11px; padding: 6px 10px; background: #0a0a0a; color: #fff; border: 1px solid #333; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.8);">
+          <div style="font-weight: 800; color: #38bdf8; margin-bottom: 2px;">${modeLabel}</div>
+          <div>Path: <strong>${shipment.origin}</strong> ➔ <strong>${shipment.destination}</strong></div>
+          <div style="color: #aaa; margin-top: 2px;">Transit Time: <strong>${shipment.metrics.transit_hours}h</strong></div>
+          <div style="color: #22c55e; font-size: 9px; margin-top: 4px;">⛓️ ON-CHAIN TX: ${txHash.slice(0, 16)}...</div>
+        </div>`,
+        { sticky: true }
+      );
 
       activeCoords.forEach(c => bounds.extend(c));
     }
 
-    // 2. Draw Selected Alternate Route Line (Dashed) & Waypoint Leg Transfer Nodes (Road -> Port -> Dist)
+    // 2. Draw Selected Alternate Route Segments with Modal Transport Tooltips (Road, Rail, Maritime, Air)
     if (altRouteId && shipment.alternate_routes) {
       const alt = shipment.alternate_routes.find((r) => r.route_id === altRouteId);
       if (alt && alt.waypoint_coords && alt.waypoint_coords.length > 1) {
         const altCoords = alt.waypoint_coords.map(([lat, lon]) => [lat, lon] as [number, number]);
 
-        L.polyline(altCoords, {
+        const altPolyline = L.polyline(altCoords, {
           color: alt.risk_grade === 'HIGH' ? '#ef4444' : alt.risk_grade === 'MODERATE' ? '#f59e0b' : '#22c55e',
-          weight: 3,
+          weight: 4,
           dashArray: '8, 6',
           opacity: 0.9,
         }).addTo(layerGroup);
 
         altCoords.forEach(c => bounds.extend(c));
 
-        // Draw Waypoint Leg Nodes (e.g. Road Hub, Port, Rail, Dist Hub)
+        // Hover tooltip over path showing modal transport breakdown
+        const seqText = alt.modal_sequence.map(m => MODE_ICONS[m] || m).join(' ➔ ');
+        const altTx = alt.blockchain_message?.tx_hash || 'Verified Reroute Contract';
+
+        altPolyline.bindTooltip(
+          `<div style="font-family: monospace; font-size: 11px; padding: 6px 10px; background: #0a0a0a; color: #fff; border: 1px solid #444; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.8);">
+            <div style="font-weight: 800; color: #22c55e; margin-bottom: 2px;">ALTERNATIVE ROUTE: ${alt.route_id}</div>
+            <div>Modal Chain: <strong>${seqText}</strong></div>
+            <div style="color: #aaa; margin-top: 2px;">Est. Hours: <strong>${alt.estimated_transit_hours}h</strong> | Cost: <strong>$${alt.base_freight_cost_usd}</strong></div>
+            <div style="color: #00ffcc; font-size: 9px; margin-top: 4px;">⛓️ REROUTE TX: ${altTx.slice(0, 16)}...</div>
+          </div>`,
+          { sticky: true }
+        );
+
+        // Draw Waypoint Leg Nodes on Map (Road Hub, Ocean Port, Rail Terminal, Dist Hub)
         alt.waypoint_coords.forEach((coord, idx) => {
-          const nodeName = alt.waypoints[idx] || `Point ${idx + 1}`;
+          const nodeName = alt.waypoints[idx] || `Node ${idx + 1}`;
           const isOrigin = idx === 0;
           const isDest = idx === alt.waypoint_coords.length - 1;
+          const modeType = alt.modal_sequence[Math.min(idx, alt.modal_sequence.length - 1)];
 
           const waypointMarker = L.circleMarker([coord[0], coord[1]], {
-            radius: isOrigin || isDest ? 7 : 5,
+            radius: isOrigin || isDest ? 8 : 6,
             fillColor: isOrigin ? '#22c55e' : isDest ? '#38bdf8' : '#e2e8f0',
             color: '#000000',
             weight: 2,
             opacity: 1,
-            fillOpacity: 0.9,
+            fillOpacity: 0.95,
           }).addTo(layerGroup);
 
           waypointMarker.bindTooltip(
-            `<div style="font-family: monospace; font-size: 10px; padding: 2px 6px; background: #111; color: #fff; border: 1px solid #444; border-radius: 4px;">
-              ${isOrigin ? '🏁 START: ' : isDest ? '🎯 END: ' : '📍 WAYPOINT: '} <strong>${nodeName}</strong>
+            `<div style="font-family: monospace; font-size: 10px; padding: 3px 6px; background: #111; color: #fff; border: 1px solid #444; border-radius: 4px;">
+              ${isOrigin ? '🏁 ORIGIN: ' : isDest ? '🎯 DESTINATION: ' : '📍 TRANSFER POINT: '} <strong>${nodeName}</strong><br/>
+              <span style="color: #aaa;">Mode: ${modeType}</span>
             </div>`,
             { permanent: false, direction: 'top' }
           );
@@ -195,7 +235,7 @@ export default function WorldMap({
       }
     }
 
-    // 3. Draw Vehicle Circle Marker (Red if blocked, White if active)
+    // 3. Draw Vehicle Circle Marker
     const vehicleMarker = L.circleMarker([curLat, curLon], {
       radius: 9,
       fillColor: isBlocked ? 'red' : '#ffffff',
@@ -216,7 +256,7 @@ export default function WorldMap({
       { permanent: true, direction: 'top', offset: [0, -10] }
     );
 
-    // Auto-fit map view to bounds
+    // Auto-fit map view
     try {
       if (bounds.isValid()) {
         map.fitBounds(bounds, { padding: [50, 50], maxZoom: 7 });

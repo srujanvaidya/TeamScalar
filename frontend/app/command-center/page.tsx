@@ -2,177 +2,58 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/store/useStore';
-import WorldMap, { Shipment } from '@/components/WorldMap';
+import WorldMap, { Shipment, RouteLeg } from '@/components/WorldMap';
 import HITLModal from '@/components/HITLModal';
-import { Shield, ChevronRight, RefreshCw, AlertTriangle, CheckCircle, Clock, Link as LinkIcon, Cpu, Navigation, FileCode } from 'lucide-react';
+import { Shield, ChevronRight, RefreshCw, AlertTriangle, CheckCircle, Clock, Link as LinkIcon, Cpu, Navigation, FileCode, Truck, Anchor, Train, Plane } from 'lucide-react';
 
-const FALLBACK_SHIPMENTS: Shipment[] = [
-  {
-    cargo_id: "CONT-99482-SH",
-    mode: "MARITIME",
-    vessel_name: "COSCO SHIPPING GEMINI",
-    origin: "PORT_SHANGHAI_01",
-    destination: "PORT_ROTTERDAM_02",
-    current_status: "BLOCKED_BY_STRIKE",
-    current_coordinates: [31.2304, 121.4737],
-    active_route_coords: [
-      [31.23, 121.47], [22.31, 114.16], [1.29, 103.85],
-      [26.6, 56.3], [12.5, 43.3], [29.9, 32.5], [51.9, 4.47]
-    ],
-    metrics: {
-      transit_hours: 142.0,
-      cost_usd: 14200.0,
-      co2_kg: 1850.0,
-      sla_risk: "HIGH"
-    },
-    blockchain_provenance: {
-      tx_hash: "0x7f9a1b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a",
-      block_number: 4829103,
-      contract_address: "0xbe6E842E5CCD8752EF538B7874530F3bE702e8Ae",
-      origin_point: "PORT_SHANGHAI_01 [31.2304, 121.4737]",
-      destination_point: "PORT_ROTTERDAM_02 [51.9244, 4.4777]",
-      verified_on_chain: true,
-      timestamp: "2026-08-22T19:20:00Z"
-    },
-    alternate_routes: [
-      {
-        route_id: "ROUTE_ALT_A",
-        modal_sequence: ["ROAD_TRUCK", "RAIL_FREIGHT", "ROAD_TRUCK"],
-        waypoints: ["HUB_SHANGHAI", "RAIL_CHENGDU", "HUB_WARSAW", "DIST_BERLIN"],
-        waypoint_coords: [
-          [31.23, 121.47], [30.57, 104.07], [52.23, 21.01], [52.52, 13.4]
-        ],
-        estimated_transit_hours: 110.5,
-        base_freight_cost_usd: 18450.00,
-        co2_emissions_kg: 1240.5,
-        risk_grade: "LOW",
-        color_gradient: [56, 142, 60],
-        blockchain_message: {
-          action: "PROPOSING_REROUTE_TRANSACTION",
-          start_node: "HUB_SHANGHAI (Road Hub)",
-          end_node: "DIST_BERLIN (Distribution Center)",
-          leg_summary: "ROAD -> RAIL -> ROAD",
-          tx_hash: "0x3a2b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b",
-          verified_on_chain: true
-        },
-        leg_breakdown: [
-          { from_node: "HUB_SHANGHAI", from_type: "ROAD", to_node: "RAIL_CHENGDU", to_type: "RAIL", mode: "ROAD_TRUCK", transit_hours: 18.0 },
-          { from_node: "RAIL_CHENGDU", from_type: "RAIL", to_node: "HUB_WARSAW", to_type: "HUB", mode: "RAIL_FREIGHT", transit_hours: 84.5 },
-          { from_node: "HUB_WARSAW", from_type: "HUB", to_node: "DIST_BERLIN", to_type: "DIST", mode: "ROAD_TRUCK", transit_hours: 8.0 }
-        ]
-      },
-      {
-        route_id: "ROUTE_ALT_B",
-        modal_sequence: ["MARITIME", "AIR_FREIGHT"],
-        waypoints: ["PORT_SHANGHAI", "AIR_DUBAI", "PORT_ROTTERDAM"],
-        waypoint_coords: [
-          [31.23, 121.47], [25.2, 55.27], [51.9, 4.47]
-        ],
-        estimated_transit_hours: 165.0,
-        base_freight_cost_usd: 29100.00,
-        co2_emissions_kg: 3400.0,
-        risk_grade: "HIGH",
-        color_gradient: [239, 68, 68],
-        blockchain_message: {
-          action: "EXPRESS_AIR_REROUTE_CONTRACT",
-          start_node: "PORT_SHANGHAI (Port)",
-          end_node: "PORT_ROTTERDAM (Port)",
-          leg_summary: "PORT -> AIRPORT -> PORT",
-          tx_hash: "0x9d1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a",
-          verified_on_chain: true
-        },
-        leg_breakdown: [
-          { from_node: "PORT_SHANGHAI", from_type: "PORT", to_node: "AIR_DUBAI", to_type: "AIR", mode: "MARITIME", transit_hours: 120.0 },
-          { from_node: "AIR_DUBAI", from_type: "AIR", to_node: "PORT_ROTTERDAM", to_type: "PORT", mode: "AIR_FREIGHT", transit_hours: 45.0 }
-        ]
-      }
-    ]
-  },
-  {
-    cargo_id: "CONT-48192-DXB",
-    mode: "MARITIME",
-    vessel_name: "MAERSK MC-KINNEY MOLLER",
-    origin: "PORT_SINGAPORE_01",
-    destination: "PORT_DUBAI_01",
-    current_status: "IN_TRANSIT",
-    current_coordinates: [1.3521, 103.8198],
-    active_route_coords: [
-      [1.35, 103.82], [5.9, 80.2], [19.08, 72.88], [25.2, 55.27]
-    ],
-    metrics: {
-      transit_hours: 72.0,
-      cost_usd: 8400.0,
-      co2_kg: 980.0,
-      sla_risk: "LOW"
-    },
-    blockchain_provenance: {
-      tx_hash: "0x8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f",
-      block_number: 4828990,
-      contract_address: "0x48B0DB4e87D280AFB3fDC572f61A641E7261D74D",
-      origin_point: "PORT_SINGAPORE_01 [1.3521, 103.8198]",
-      destination_point: "PORT_DUBAI_01 [25.2048, 55.2708]",
-      verified_on_chain: true,
-      timestamp: "2026-08-22T18:45:00Z"
-    },
-    alternate_routes: [
-      {
-        route_id: "ROUTE_ALT_C",
-        modal_sequence: ["MARITIME", "ROAD_TRUCK"],
-        waypoints: ["PORT_SINGAPORE", "HUB_MUMBAI", "PORT_DUBAI"],
-        waypoint_coords: [
-          [1.35, 103.82], [19.08, 72.88], [25.2, 55.27]
-        ],
-        estimated_transit_hours: 68.0,
-        base_freight_cost_usd: 9200.00,
-        co2_emissions_kg: 850.0,
-        risk_grade: "LOW",
-        color_gradient: [56, 142, 60],
-        blockchain_message: {
-          action: "PORT_TO_PORT_TRANSFER_ESCROW",
-          start_node: "PORT_SINGAPORE (Port)",
-          end_node: "PORT_DUBAI (Port)",
-          leg_summary: "PORT -> HUB -> PORT",
-          tx_hash: "0x5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d",
-          verified_on_chain: true
-        },
-        leg_breakdown: [
-          { from_node: "PORT_SINGAPORE", from_type: "PORT", to_node: "HUB_MUMBAI", to_type: "HUB", mode: "MARITIME", transit_hours: 48.0 },
-          { from_node: "HUB_MUMBAI", from_type: "HUB", to_node: "PORT_DUBAI", to_type: "PORT", mode: "MARITIME", transit_hours: 20.0 }
-        ]
-      }
-    ]
-  }
-];
+const MODE_ICON_MAP: Record<string, { icon: any; label: string }> = {
+  ROAD_TRUCK: { icon: Truck, label: '🚚 ROAD TRUCK' },
+  MARITIME: { icon: Anchor, label: '🚢 OCEAN FREIGHT' },
+  OCEAN_FREIGHT: { icon: Anchor, label: '🚢 OCEAN FREIGHT' },
+  RAIL_FREIGHT: { icon: Train, label: '🚆 RAIL FREIGHT' },
+  AIR_FREIGHT: { icon: Plane, label: '✈️ AIR FREIGHT' },
+};
 
 export default function CommandCenterPage() {
   const { hitlPending, setPenaltyAvoided, setCarbonSaved } = useStore();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapSize, setMapSize] = useState({ w: 800, h: 600 });
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const [shipments, setShipments] = useState<Shipment[]>(FALLBACK_SHIPMENTS);
-  const [selectedCargoId, setSelectedCargoId] = useState<string>("CONT-99482-SH");
-  const [activeAltRouteId, setActiveAltRouteId] = useState<string | null>("ROUTE_ALT_A");
+  const [shipments, setShipments] = useState<Shipment[]>([]);
+  const [selectedCargoId, setSelectedCargoId] = useState<string>('');
+  const [activeAltRouteId, setActiveAltRouteId] = useState<string | null>(null);
   const [showJsonMsg, setShowJsonMsg] = useState(false);
+  const [viewTab, setViewTab] = useState<'LEGS' | 'ALTERNATES'>('LEGS');
 
-  useEffect(() => {
-    const fetchShipments = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch("http://localhost:8000/api/v1/shipments");
-        if (res.ok) {
-          const json = await res.json();
-          if (json.shipments && json.shipments.length) {
-            setShipments(json.shipments);
+  // Fetch real backend data ONLY
+  const fetchBackendShipments = async () => {
+    setLoading(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch("http://localhost:8000/api/v1/shipments");
+      if (!res.ok) throw new Error(`Backend HTTP ${res.status}`);
+      const json = await res.json();
+      if (json.shipments && json.shipments.length) {
+        setShipments(json.shipments);
+        if (!selectedCargoId) {
+          setSelectedCargoId(json.shipments[0].cargo_id);
+          if (json.shipments[0].alternate_routes?.length) {
+            setActiveAltRouteId(json.shipments[0].alternate_routes[0].route_id);
           }
         }
-      } catch {
-        setShipments(FALLBACK_SHIPMENTS);
+      } else {
+        setErrorMsg("No active shipments returned from backend.");
       }
-      setLoading(false);
-    };
+    } catch (err: any) {
+      setErrorMsg(`Failed to connect to Python FastAPI server at http://localhost:8000: ${err?.message || err}`);
+    }
+    setLoading(false);
+  };
 
-    fetchShipments();
+  useEffect(() => {
+    fetchBackendShipments();
   }, []);
 
   useEffect(() => {
@@ -186,54 +67,83 @@ export default function CommandCenterPage() {
     return () => obs.disconnect();
   }, []);
 
-  const selectedShipment = shipments.find(s => s.cargo_id === selectedCargoId) || shipments[0];
-  const selectedAltRoute = selectedShipment.alternate_routes.find(r => r.route_id === activeAltRouteId) || selectedShipment.alternate_routes[0];
+  const selectedShipment = shipments.find(s => s.cargo_id === selectedCargoId) || shipments[0] || null;
+  const selectedAltRoute = selectedShipment?.alternate_routes?.find(r => r.route_id === activeAltRouteId) || selectedShipment?.alternate_routes?.[0] || null;
+
+  // Active legs array for the selected shipment / alternate route
+  const activeLegs: RouteLeg[] = (selectedAltRoute?.leg_breakdown && selectedAltRoute.leg_breakdown.length > 0)
+    ? selectedAltRoute.leg_breakdown
+    : (selectedShipment?.route_legs && selectedShipment.route_legs.length > 0)
+      ? selectedShipment.route_legs
+      : [];
 
   return (
     <div style={{ display: 'flex', height: '100vh', flexDirection: 'column', background: '#000000', color: '#ffffff', overflow: 'hidden' }}>
-      {/* Header */}
+      {/* Monochromatic Header */}
       <header style={{
         height: 44, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 16px', borderBottom: '1px solid #1a1a1a',
         background: '#090909', flexShrink: 0, fontSize: 11, fontFamily: 'JetBrains Mono, monospace'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ffffff', boxShadow: '0 0 8px #ffffff' }} />
-          <span style={{ fontWeight: 800, color: '#ffffff', letterSpacing: '0.08em' }}>COMMAND CENTER // BLOCKCHAIN LOCATION PROVENANCE</span>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e' }} />
+          <span style={{ fontWeight: 800, color: '#ffffff', letterSpacing: '0.08em' }}>COMMAND CENTER // BACKEND REAL-TIME SHIPMENT DATA</span>
         </div>
 
-        {/* Shipment Selector */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ color: '#888888', fontSize: 10 }}>SHIPMENT PROVENANCE:</span>
-          <select
-            value={selectedCargoId}
-            onChange={(e) => {
-              setSelectedCargoId(e.target.value);
-              const s = shipments.find(item => item.cargo_id === e.target.value);
-              if (s && s.alternate_routes.length) {
-                setActiveAltRouteId(s.alternate_routes[0].route_id);
-              }
-            }}
-            style={{
-              background: '#141414', color: '#ffffff', border: '1px solid #333333',
-              borderRadius: 4, padding: '4px 10px', fontSize: 11, fontWeight: 700, outline: 'none', cursor: 'pointer'
-            }}
+        {/* Shipment Selector & Refresh */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            onClick={fetchBackendShipments}
+            style={{ background: '#141414', border: '1px solid #333', color: '#fff', borderRadius: 4, padding: '3px 8px', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
           >
-            {shipments.map(s => (
-              <option key={s.cargo_id} value={s.cargo_id}>
-                {s.cargo_id} — {s.vessel_name} ({s.current_status})
-              </option>
-            ))}
-          </select>
+            <RefreshCw size={11} /> Refresh Backend
+          </button>
+
+          {shipments.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ color: '#888888', fontSize: 10 }}>CARGO ID:</span>
+              <select
+                value={selectedCargoId}
+                onChange={(e) => {
+                  setSelectedCargoId(e.target.value);
+                  const s = shipments.find(item => item.cargo_id === e.target.value);
+                  if (s && s.alternate_routes?.length) {
+                    setActiveAltRouteId(s.alternate_routes[0].route_id);
+                  }
+                }}
+                style={{
+                  background: '#141414', color: '#ffffff', border: '1px solid #333333',
+                  borderRadius: 4, padding: '4px 10px', fontSize: 11, fontWeight: 700, outline: 'none', cursor: 'pointer'
+                }}
+              >
+                {shipments.map(s => (
+                  <option key={s.cargo_id} value={s.cargo_id}>
+                    {s.cargo_id} — {s.vessel_name} ({s.current_status})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </header>
 
-      {/* Main Container */}
+      {/* Main Viewport */}
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: '#000000' }}>
-        {/* On-Chain Provenance Banner Overlay (Start Point to Destination) */}
-        {selectedShipment.blockchain_provenance && (
+        {/* Error or Loading Banner */}
+        {errorMsg && (
           <div style={{
-            position: 'absolute', top: 12, left: 12, zIndex: 30, maxWidth: 420,
+            position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 40,
+            background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#ef4444',
+            padding: '8px 16px', borderRadius: 6, fontSize: 11, fontFamily: 'JetBrains Mono, monospace'
+          }}>
+            ⚠️ {errorMsg}
+          </div>
+        )}
+
+        {/* On-Chain Provenance Banner Overlay */}
+        {selectedShipment?.blockchain_provenance && (
+          <div style={{
+            position: 'absolute', top: 12, left: 12, zIndex: 30, maxWidth: 450,
             background: 'rgba(10, 10, 10, 0.92)', backdropFilter: 'blur(10px)',
             border: '1px solid #333333', borderRadius: 6, padding: '10px 14px',
             fontSize: 10, fontFamily: 'JetBrains Mono, monospace', boxShadow: '0 8px 24px rgba(0,0,0,0.8)'
@@ -241,16 +151,15 @@ export default function CommandCenterPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#22c55e', fontWeight: 800 }}>
                 <LinkIcon size={12} />
-                <span>VERIFIED ON-CHAIN PROVENANCE</span>
+                <span>ON-CHAIN BLOCKCHAIN LOCATION LEDGER</span>
               </div>
               <span style={{ color: '#888888', fontSize: 9 }}>Block #{selectedShipment.blockchain_provenance.block_number}</span>
             </div>
 
             <div style={{ color: '#aaaaaa', marginBottom: 4 }}>
-              <strong>TX:</strong> <span style={{ color: '#ffffff' }}>{selectedShipment.blockchain_provenance.tx_hash}</span>
+              <strong>TX HASH:</strong> <span style={{ color: '#ffffff' }}>{selectedShipment.blockchain_provenance.tx_hash}</span>
             </div>
 
-            {/* Starting Point to Destination Breakdown */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6, paddingTop: 6, borderTop: '1px solid #222' }}>
               <div>
                 <span style={{ color: '#666' }}>🏁 STARTING POINT: </span>
@@ -264,7 +173,7 @@ export default function CommandCenterPage() {
           </div>
         )}
 
-        {/* Map View */}
+        {/* Mapbox / Leaflet Canvas */}
         <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }}>
           <WorldMap
             shipments={shipments}
@@ -276,127 +185,204 @@ export default function CommandCenterPage() {
         </div>
       </div>
 
-      {/* Monochromatic Bottom Data Drawer with Blockchain Leg Breakdown */}
-      <div style={{
-        height: 220, borderTop: '1px solid #1a1a1a',
-        background: '#090909', display: 'flex', flexDirection: 'column', flexShrink: 0
-      }}>
-        {/* Selected Cargo Header */}
+      {/* Monochromatic Bottom Data Drawer */}
+      {selectedShipment && (
         <div style={{
-          padding: '8px 16px', background: '#111111', borderBottom: '1px solid #1f1f1f',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11
+          height: 250, borderTop: '1px solid #1a1a1a',
+          background: '#090909', display: 'flex', flexDirection: 'column', flexShrink: 0
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span style={{ fontWeight: 800, color: '#ffffff', fontFamily: 'JetBrains Mono, monospace' }}>
-              📦 {selectedShipment.cargo_id}
-            </span>
-            <span style={{ color: '#cccccc', fontWeight: 600 }}>
-              {selectedShipment.vessel_name}
-            </span>
-            <span style={{ color: '#444444' }}>|</span>
-            <span style={{ color: '#888888' }}>
-              {selectedShipment.origin} → {selectedShipment.destination}
-            </span>
-            <span className={`badge ${selectedShipment.current_status.includes('BLOCKED') ? 'badge-critical' : 'badge-low'}`}>
-              {selectedShipment.current_status}
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', gap: 12, fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}>
-            <button
-              onClick={() => setShowJsonMsg(!showJsonMsg)}
-              style={{
-                background: showJsonMsg ? '#ffffff' : '#141414',
-                color: showJsonMsg ? '#000000' : '#ffffff',
-                border: '1px solid #333', padding: '3px 8px', borderRadius: 4, cursor: 'pointer'
-              }}
-            >
-              {showJsonMsg ? 'Hide On-Chain JSON' : '🔍 Inspect Blockchain JSON Payload'}
-            </button>
-          </div>
-        </div>
-
-        {/* JSON Message Inspector Modal Overlay */}
-        {showJsonMsg && selectedAltRoute?.blockchain_message && (
-          <div style={{ padding: 12, background: '#050505', borderBottom: '1px solid #222', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}>
-            <div style={{ color: '#22c55e', fontWeight: 700, marginBottom: 4 }}>
-              ⚡ BLOCKCHAIN JSON MESSAGE (ON-CHAIN ROUTE PROVENANCE):
+          {/* Selected Cargo Control Header & Tabs */}
+          <div style={{
+            padding: '8px 16px', background: '#111111', borderBottom: '1px solid #1f1f1f',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <span style={{ fontWeight: 800, color: '#ffffff', fontFamily: 'JetBrains Mono, monospace' }}>
+                📦 {selectedShipment.cargo_id}
+              </span>
+              <span style={{ color: '#cccccc', fontWeight: 600 }}>
+                {selectedShipment.vessel_name}
+              </span>
+              <span style={{ color: '#444444' }}>|</span>
+              <span style={{ color: '#888888' }}>
+                {selectedShipment.origin} ➔ {selectedShipment.destination}
+              </span>
+              <span className={`badge ${selectedShipment.current_status.includes('BLOCKED') ? 'badge-critical' : 'badge-low'}`}>
+                {selectedShipment.current_status}
+              </span>
             </div>
-            <pre style={{ margin: 0, color: '#00ffcc', background: '#000', padding: 8, borderRadius: 4, overflowX: 'auto' }}>
-{JSON.stringify(selectedAltRoute.blockchain_message, null, 2)}
-            </pre>
+
+            {/* View Switcher Tabs (Path Legs Breakdown vs Alternate Reroutes) */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'JetBrains Mono, monospace', fontSize: 10 }}>
+              <div style={{ display: 'flex', background: '#000', borderRadius: 4, overflow: 'hidden', border: '1px solid #333' }}>
+                <button
+                  onClick={() => setViewTab('LEGS')}
+                  style={{
+                    padding: '4px 10px', background: viewTab === 'LEGS' ? '#ffffff' : 'transparent',
+                    color: viewTab === 'LEGS' ? '#000000' : '#888888', border: 'none', cursor: 'pointer', fontWeight: 700
+                  }}
+                >
+                  🛤️ REAL ROUTE LEGS & TIMESTAMPS ({activeLegs.length})
+                </button>
+                <button
+                  onClick={() => setViewTab('ALTERNATES')}
+                  style={{
+                    padding: '4px 10px', background: viewTab === 'ALTERNATES' ? '#ffffff' : 'transparent',
+                    color: viewTab === 'ALTERNATES' ? '#000000' : '#888888', border: 'none', cursor: 'pointer', fontWeight: 700
+                  }}
+                >
+                  ⚡ ALTERNATE REROUTES ({selectedShipment.alternate_routes.length})
+                </button>
+              </div>
+
+              <button
+                onClick={() => setShowJsonMsg(!showJsonMsg)}
+                style={{
+                  background: showJsonMsg ? '#ffffff' : '#141414',
+                  color: showJsonMsg ? '#000000' : '#ffffff',
+                  border: '1px solid #333', padding: '4px 8px', borderRadius: 4, cursor: 'pointer'
+                }}
+              >
+                {showJsonMsg ? 'Hide On-Chain JSON' : '🔍 JSON Inspector'}
+              </button>
+            </div>
           </div>
-        )}
 
-        {/* Route Legs & Alternate Route Matrix Table */}
-        <div className="scroll-y" style={{ flex: 1 }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, fontFamily: 'Inter, sans-serif' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #1a1a1a', background: '#090909' }}>
-                {['Route ID', 'Modal Leg Chain (Road ➔ Port ➔ Dist)', 'Starting Point', 'Ending Point', 'Est. Hours', 'Cost (USD)', 'Risk Grade', 'Blockchain Action'].map(h => (
-                  <th key={h} style={{ padding: '6px 16px', textAlign: 'left', color: '#666666', fontWeight: 500, fontSize: 10 }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {selectedShipment.alternate_routes.map((alt) => {
-                const isActive = activeAltRouteId === alt.route_id;
+          {/* JSON Inspector View */}
+          {showJsonMsg && (
+            <div style={{ padding: 10, background: '#050505', borderBottom: '1px solid #222', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}>
+              <div style={{ color: '#22c55e', fontWeight: 700, marginBottom: 4 }}>
+                ⚡ BACKEND REAL-TIME BLOCKCHAIN JSON DATA (SERVED BY FASTAPI):
+              </div>
+              <pre style={{ margin: 0, color: '#00ffcc', background: '#000', padding: 8, borderRadius: 4, maxHeight: 100, overflow: 'auto' }}>
+{JSON.stringify(selectedAltRoute?.blockchain_message || selectedShipment.blockchain_provenance, null, 2)}
+              </pre>
+            </div>
+          )}
 
-                return (
-                  <tr
-                    key={alt.route_id}
-                    className="table-row"
-                    style={{ background: isActive ? '#141414' : undefined }}
-                  >
-                    <td style={{ padding: '6px 16px', fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: isActive ? '#ffffff' : '#aaaaaa' }}>
-                      {alt.route_id}
-                    </td>
-                    <td style={{ padding: '6px 16px', color: '#cccccc', fontFamily: 'JetBrains Mono, monospace', fontSize: 10 }}>
-                      {alt.modal_sequence.join(' ➔ ')}
-                    </td>
-                    <td style={{ padding: '6px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#22c55e' }}>
-                      {alt.blockchain_message?.start_node || alt.waypoints[0]}
-                    </td>
-                    <td style={{ padding: '6px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#38bdf8' }}>
-                      {alt.blockchain_message?.end_node || alt.waypoints[alt.waypoints.length - 1]}
-                    </td>
-                    <td style={{ padding: '6px 16px', color: '#ffffff' }}>
-                      {alt.estimated_transit_hours}h
-                    </td>
-                    <td style={{ padding: '6px 16px', color: '#ffffff' }}>
-                      ${alt.base_freight_cost_usd.toLocaleString()}
-                    </td>
-                    <td style={{ padding: '6px 16px' }}>
-                      <span className={`badge ${alt.risk_grade === 'LOW' ? 'badge-low' : alt.risk_grade === 'HIGH' ? 'badge-critical' : 'badge-medium'}`}>
-                        {alt.risk_grade} RISK
-                      </span>
-                    </td>
-                    <td style={{ padding: '6px 16px' }}>
-                      <button
-                        className="btn btn-ghost"
-                        style={{
-                          padding: '3px 10px', fontSize: 10,
-                          background: isActive ? '#ffffff' : undefined,
-                          borderColor: isActive ? '#ffffff' : '#333333',
-                          color: isActive ? '#000000' : '#ffffff',
-                          fontWeight: isActive ? 700 : 400
-                        }}
-                        onClick={() => {
-                          setActiveAltRouteId(alt.route_id);
-                          setCarbonSaved(alt.co2_emissions_kg);
-                          setPenaltyAvoided(180000);
-                        }}
-                      >
-                        {isActive ? '✓ Selected Route' : 'Select Route'}
-                      </button>
-                    </td>
+          {/* Tab 1: Real Route Legs Table with Backend Timestamps and Transport Mode Columns */}
+          {viewTab === 'LEGS' && (
+            <div className="scroll-y" style={{ flex: 1 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, fontFamily: 'Inter, sans-serif' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #1a1a1a', background: '#090909' }}>
+                    {['Leg ID', 'Transport Mode', 'From Point ➔ To Point', 'Departure Date & Time (UTC)', 'Arrival Date & Time (UTC)', 'Distance / Duration', 'Blockchain Tx Hash'].map(h => (
+                      <th key={h} style={{ padding: '6px 16px', textAlign: 'left', color: '#666666', fontWeight: 500, fontSize: 10 }}>{h}</th>
+                    ))}
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {activeLegs.map((leg, idx) => {
+                    const modeObj = MODE_ICON_MAP[leg.mode] || { label: leg.mode };
+                    const depDate = leg.departure_time ? new Date(leg.departure_time).toUTCString() : 'N/A';
+                    const arrDate = leg.arrival_time ? new Date(leg.arrival_time).toUTCString() : 'N/A';
+                    const txHash = leg.tx_hash || selectedShipment.blockchain_provenance?.tx_hash || 'Verified On-Chain';
+
+                    return (
+                      <tr key={leg.leg_id || idx} className="table-row">
+                        <td style={{ padding: '6px 16px', fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#ffffff' }}>
+                          {leg.leg_id || `LEG-0${idx + 1}`}
+                        </td>
+                        <td style={{ padding: '6px 16px', color: '#ffffff', fontWeight: 600 }}>
+                          <span style={{ background: '#141414', padding: '3px 8px', borderRadius: 4, border: '1px solid #333', fontSize: 10 }}>
+                            {modeObj.label}
+                          </span>
+                        </td>
+                        <td style={{ padding: '6px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#cccccc' }}>
+                          <span style={{ color: '#22c55e', fontWeight: 700 }}>{leg.from_node}</span>
+                          <span style={{ color: '#666', margin: '0 6px' }}>➔</span>
+                          <span style={{ color: '#38bdf8', fontWeight: 700 }}>{leg.to_node}</span>
+                        </td>
+                        <td style={{ padding: '6px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#ffffff' }}>
+                          {depDate}
+                        </td>
+                        <td style={{ padding: '6px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#ffffff' }}>
+                          {arrDate}
+                        </td>
+                        <td style={{ padding: '6px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#aaa' }}>
+                          {leg.distance_km ? `${leg.distance_km.toLocaleString()} km` : '—'} | <strong style={{ color: '#fff' }}>{leg.transit_hours || '—'}h</strong>
+                        </td>
+                        <td style={{ padding: '6px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#22c55e' }}>
+                          <span style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '2px 6px', borderRadius: 3 }}>
+                            ⛓️ {txHash.slice(0, 16)}...
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Tab 2: Alternate Routes Matrix */}
+          {viewTab === 'ALTERNATES' && (
+            <div className="scroll-y" style={{ flex: 1 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, fontFamily: 'Inter, sans-serif' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #1a1a1a', background: '#090909' }}>
+                    {['Route ID', 'Modal Leg Chain', 'Start Point', 'End Point', 'Est. Hours', 'Cost (USD)', 'Risk Grade', 'Action'].map(h => (
+                      <th key={h} style={{ padding: '6px 16px', textAlign: 'left', color: '#666666', fontWeight: 500, fontSize: 10 }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedShipment.alternate_routes.map((alt) => {
+                    const isActive = activeAltRouteId === alt.route_id;
+
+                    return (
+                      <tr key={alt.route_id} className="table-row" style={{ background: isActive ? '#141414' : undefined }}>
+                        <td style={{ padding: '6px 16px', fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: isActive ? '#ffffff' : '#aaaaaa' }}>
+                          {alt.route_id}
+                        </td>
+                        <td style={{ padding: '6px 16px', color: '#cccccc', fontFamily: 'JetBrains Mono, monospace', fontSize: 10 }}>
+                          {alt.modal_sequence.join(' ➔ ')}
+                        </td>
+                        <td style={{ padding: '6px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#22c55e' }}>
+                          {alt.blockchain_message?.start_node || alt.waypoints[0]}
+                        </td>
+                        <td style={{ padding: '6px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#38bdf8' }}>
+                          {alt.blockchain_message?.end_node || alt.waypoints[alt.waypoints.length - 1]}
+                        </td>
+                        <td style={{ padding: '6px 16px', color: '#ffffff' }}>
+                          {alt.estimated_transit_hours}h
+                        </td>
+                        <td style={{ padding: '6px 16px', color: '#ffffff' }}>
+                          ${alt.base_freight_cost_usd.toLocaleString()}
+                        </td>
+                        <td style={{ padding: '6px 16px' }}>
+                          <span className={`badge ${alt.risk_grade === 'LOW' ? 'badge-low' : alt.risk_grade === 'HIGH' ? 'badge-critical' : 'badge-medium'}`}>
+                            {alt.risk_grade} RISK
+                          </span>
+                        </td>
+                        <td style={{ padding: '6px 16px' }}>
+                          <button
+                            className="btn btn-ghost"
+                            style={{
+                              padding: '3px 10px', fontSize: 10,
+                              background: isActive ? '#ffffff' : undefined,
+                              borderColor: isActive ? '#ffffff' : '#333333',
+                              color: isActive ? '#000000' : '#ffffff',
+                              fontWeight: isActive ? 700 : 400
+                            }}
+                            onClick={() => {
+                              setActiveAltRouteId(alt.route_id);
+                              setCarbonSaved(alt.co2_emissions_kg);
+                              setPenaltyAvoided(180000);
+                            }}
+                          >
+                            {isActive ? '✓ Selected Route' : 'Select Route'}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {hitlPending && <HITLModal />}
     </div>
