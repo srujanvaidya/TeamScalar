@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useStore } from '@/store/useStore';
 import { useRouter } from 'next/navigation';
 import { 
   Cpu, Database, ShieldCheck, Activity, Layers, Lock, 
-  Play, RotateCcw, MoreVertical, Sliders, Link2, Grid, Hand, MousePointer,
-  CheckCircle2, AlertTriangle, Clock, ArrowRight, X, ChevronRight
+  Sliders, Link2, Grid, Hand, MousePointer,
+  X
 } from 'lucide-react';
 
 type NodeStatus = 'idle' | 'executing' | 'completed' | 'approval_required';
@@ -32,8 +32,6 @@ type Connection = {
   fromId: string;
   toId: string;
   label: string;
-  fromPort?: 'bottom' | 'right' | 'left';
-  toPort?: 'top' | 'left' | 'right';
 };
 
 const INITIAL_N8N_NODES: N8nNode[] = [
@@ -317,39 +315,115 @@ export default function WorkflowPage() {
   const [activeDrawerTab, setActiveDrawerTab] = useState<'SUMMARY' | 'INPUT' | 'REASONING' | 'TOOLS' | 'OUTPUT' | 'JSON'>('SUMMARY');
   const [executing, setExecuting] = useState(false);
 
+  // Mouse Dragging & Panning Tool Mode
+  const [toolMode, setToolMode] = useState<'select' | 'hand'>('select');
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
+  const dragStartRef = useRef<{ mouseX: number; mouseY: number; nodeX: number; nodeY: number; panX: number; panY: number }>({
+    mouseX: 0, mouseY: 0, nodeX: 0, nodeY: 0, panX: 0, panY: 0
+  });
+
   const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
 
+  // Slow Step-by-Step Simulation (Takes 2 Seconds per Stage for Demo Visibility)
   const runLiveSimulation = async (endpoint: string) => {
     setExecuting(true);
 
-    // Reset all node statuses to idle then execute step-by-step
-    setNodes(prev => prev.map(n => ({ ...n, status: 'idle' as NodeStatus })));
+    // Reset all node statuses to idle
+    setNodes(prev => prev.map(n => ({ ...n, status: 'idle' as NodeStatus, badgeText: 'Idle' })));
 
     try {
       const res = await fetch(`http://localhost:8000${endpoint}`);
-      if (res.ok) {
-        const data = await res.json();
-        for (let i = 0; i < nodes.length; i++) {
-          await new Promise(r => setTimeout(r, 600));
-          setNodes(prev => prev.map((nd, idx) => {
-            if (idx === i) {
-              return {
-                ...nd,
-                status: (i === 5 && data.safeguard_evaluation?.requires_human_approval) ? 'approval_required' : 'completed'
-              };
-            }
-            if (idx === i + 1 && i < nodes.length - 1) {
-              return { ...nd, status: 'executing' };
-            }
-            return nd;
-          }));
-        }
+      const data = res.ok ? await res.json() : null;
+
+      for (let i = 0; i < nodes.length; i++) {
+        // Set current node to executing
+        setNodes(prev => prev.map((nd, idx) => {
+          if (idx === i) {
+            return { ...nd, status: 'executing', badgeText: 'Processing (2.0s)...' };
+          }
+          return nd;
+        }));
+
+        // Wait 2.0 full seconds per stage so judges can observe inter-agent handoff!
+        await new Promise(r => setTimeout(r, 2000));
+
+        // Mark current node completed
+        setNodes(prev => prev.map((nd, idx) => {
+          if (idx === i) {
+            const isApproval = (i === 5 && data?.safeguard_evaluation?.requires_human_approval);
+            return {
+              ...nd,
+              status: isApproval ? 'approval_required' : 'completed',
+              badgeText: isApproval ? 'Approval Required' : 'Completed'
+            };
+          }
+          return nd;
+        }));
       }
     } catch (e) {
       console.warn('Backend simulation error:', e);
     }
 
     setExecuting(false);
+  };
+
+  // Mouse Drag & Canvas Pan Event Handlers
+  const handleMouseDownNode = (e: React.MouseEvent, nodeId: string) => {
+    if (toolMode === 'hand') return;
+    e.stopPropagation();
+    setSelectedNodeId(nodeId);
+    setDraggedNodeId(nodeId);
+
+    const targetNode = nodes.find(n => n.id === nodeId);
+    if (targetNode) {
+      dragStartRef.current = {
+        mouseX: e.clientX,
+        mouseY: e.clientY,
+        nodeX: targetNode.x,
+        nodeY: targetNode.y,
+        panX: panOffset.x,
+        panY: panOffset.y
+      };
+    }
+  };
+
+  const handleMouseDownCanvas = (e: React.MouseEvent) => {
+    if (toolMode === 'hand' || e.button === 1) {
+      setIsPanning(true);
+      dragStartRef.current = {
+        mouseX: e.clientX,
+        mouseY: e.clientY,
+        nodeX: 0,
+        nodeY: 0,
+        panX: panOffset.x,
+        panY: panOffset.y
+      };
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (draggedNodeId) {
+      const dx = e.clientX - dragStartRef.current.mouseX;
+      const dy = e.clientY - dragStartRef.current.mouseY;
+      const newX = dragStartRef.current.nodeX + dx;
+      const newY = dragStartRef.current.nodeY + dy;
+
+      setNodes(prev => prev.map(n => n.id === draggedNodeId ? { ...n, x: newX, y: newY } : n));
+    } else if (isPanning) {
+      const dx = e.clientX - dragStartRef.current.mouseX;
+      const dy = e.clientY - dragStartRef.current.mouseY;
+      setPanOffset({
+        x: dragStartRef.current.panX + dx,
+        y: dragStartRef.current.panY + dy
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setDraggedNodeId(null);
+    setIsPanning(false);
   };
 
   // Helper to generate cubic bezier curve path between node coordinates
@@ -359,10 +433,10 @@ export default function WorkflowPage() {
     if (!fromNode || !toNode) return null;
 
     // Node dimensions: width ~ 300px, height ~ 110px
-    const startX = fromNode.x + 150;
-    const startY = fromNode.y + 110;
-    const endX = toNode.x + 150;
-    const endY = toNode.y;
+    const startX = fromNode.x + 150 + panOffset.x;
+    const startY = fromNode.y + 110 + panOffset.y;
+    const endX = toNode.x + 150 + panOffset.x;
+    const endY = toNode.y + panOffset.y;
 
     const controlY1 = startY + Math.abs(endY - startY) * 0.45;
     const controlY2 = endY - Math.abs(endY - startY) * 0.45;
@@ -376,7 +450,6 @@ export default function WorkflowPage() {
 
     return (
       <g key={`${conn.fromId}-${conn.toId}`}>
-        {/* Background Path Glow */}
         <path
           d={d}
           fill="none"
@@ -405,7 +478,11 @@ export default function WorkflowPage() {
   };
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#000000', color: '#ffffff', overflow: 'hidden' }}>
+    <div 
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#000000', color: '#ffffff', overflow: 'hidden', userSelect: 'none' }}
+    >
       
       {/* Top Header Control Bar */}
       <header style={{
@@ -418,7 +495,7 @@ export default function WorkflowPage() {
             N8N WORKFLOW INSPECTOR // AGENT DAG CANVAS
           </span>
           <span style={{ color: '#333333' }}>|</span>
-          <span style={{ color: '#888888', fontSize: 11 }}>DYNAMIC NODES & REAL-TIME CONNECTOR PATHS</span>
+          <span style={{ color: '#888888', fontSize: 11 }}>DRAGGABLE NODES & SLOW STEP-BY-STEP WORKFLOW (2s PER STAGE)</span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -431,7 +508,7 @@ export default function WorkflowPage() {
               fontWeight: 800, cursor: executing ? 'not-allowed' : 'pointer'
             }}
           >
-            [Execute Strike Workflow]
+            {executing ? 'Executing Workflow (2s/stage)...' : '[Execute Strike Workflow]'}
           </button>
 
           <button
@@ -460,12 +537,18 @@ export default function WorkflowPage() {
         </div>
       </header>
 
-      {/* Main Canvas Container with Infinite Dot Grid Pattern */}
-      <div style={{ flex: 1, position: 'relative', overflow: 'auto', background: '#000000' }}>
+      {/* Main Canvas Container with Interactive Mouse Drag & Dot Grid */}
+      <div 
+        onMouseDown={handleMouseDownCanvas}
+        style={{
+          flex: 1, position: 'relative', overflow: 'hidden', background: '#000000',
+          cursor: toolMode === 'hand' || isPanning ? 'grab' : 'default'
+        }}
+      >
         
         {/* Infinite Dot Grid Canvas Overlay */}
         <div style={{
-          position: 'absolute', inset: 0, minWidth: 1200, minHeight: 1100,
+          position: 'absolute', inset: 0, minWidth: 1400, minHeight: 1200,
           backgroundImage: 'radial-gradient(#222222 1.5px, transparent 1.5px)',
           backgroundSize: '20px 20px', pointerEvents: 'auto'
         }}>
@@ -475,7 +558,7 @@ export default function WorkflowPage() {
             {CONNECTIONS.map(conn => renderBezierCurve(conn))}
           </svg>
 
-          {/* Render 2D Spatial n8n Nodes */}
+          {/* Render Interactive Draggable 2D Spatial n8n Nodes */}
           {nodes.map((node) => {
             const Icon = node.icon;
             const isSelected = selectedNodeId === node.id;
@@ -486,14 +569,11 @@ export default function WorkflowPage() {
             return (
               <div
                 key={node.id}
-                onClick={() => {
-                  setSelectedNodeId(node.id);
-                  setActiveDrawerTab('SUMMARY');
-                }}
+                onMouseDown={(e) => handleMouseDownNode(e, node.id)}
                 style={{
                   position: 'absolute',
-                  left: node.x,
-                  top: node.y,
+                  left: node.x + panOffset.x,
+                  top: node.y + panOffset.y,
                   width: 300,
                   background: '#050505',
                   border: isSelected
@@ -511,9 +591,9 @@ export default function WorkflowPage() {
                     : isExecuting
                     ? '0 0 20px rgba(255, 255, 255, 0.15)'
                     : '0 8px 32px rgba(0, 0, 0, 0.8)',
-                  cursor: 'pointer',
+                  cursor: toolMode === 'hand' ? 'grab' : 'move',
                   zIndex: 10,
-                  transition: 'all 0.2s ease',
+                  transition: draggedNodeId === node.id ? 'none' : 'all 0.2s ease',
                   overflow: 'hidden'
                 }}
               >
@@ -569,18 +649,34 @@ export default function WorkflowPage() {
 
         </div>
 
-        {/* Floating Centered n8n Canvas Control Toolbar (signature n8n bottom bar) */}
+        {/* Floating Centered n8n Canvas Control Toolbar (Interactive Tool Selection & Drag Mode) */}
         <div style={{
           position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
           zIndex: 40, background: '#050505', border: '1px solid #262626',
           borderRadius: 30, padding: '6px 16px', display: 'flex', alignItems: 'center', gap: 16,
           boxShadow: '0 12px 36px rgba(0,0,0,0.9)'
         }}>
-          <button style={{ background: '#ffffff', border: 'none', borderRadius: 20, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-            <MousePointer size={14} color="#000000" />
+          <button 
+            onClick={() => setToolMode('select')}
+            title="Select & Move Node"
+            style={{
+              background: toolMode === 'select' ? '#ffffff' : 'transparent',
+              border: 'none', borderRadius: 20, width: 32, height: 32,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+            }}
+          >
+            <MousePointer size={14} color={toolMode === 'select' ? '#000000' : '#888888'} />
           </button>
-          <button style={{ background: 'transparent', border: 'none', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-            <Hand size={14} color="#888888" />
+          <button 
+            onClick={() => setToolMode('hand')}
+            title="Pan Canvas (Hand Drag Tool)"
+            style={{
+              background: toolMode === 'hand' ? '#ffffff' : 'transparent',
+              border: 'none', borderRadius: 20, width: 32, height: 32,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+            }}
+          >
+            <Hand size={14} color={toolMode === 'hand' ? '#000000' : '#888888'} />
           </button>
           <div style={{ width: 1, height: 16, background: '#222222' }} />
           <button style={{ background: 'transparent', border: 'none', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
