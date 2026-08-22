@@ -384,25 +384,6 @@ export default function LandingPage() {
                 />
               </div>
 
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: '#888888', display: 'block', marginBottom: 6, letterSpacing: '0.05em' }}>
-                  ASSIGNED OPERATING ROLE
-                </label>
-                <select
-                  value={selectedRole}
-                  onChange={(e) => setSelectedRole(e.target.value as Role)}
-                  style={{
-                    width: '100%', padding: '12px 14px', borderRadius: 6, background: '#000000',
-                    border: '1px solid #333333', color: '#ffffff', fontSize: 13, outline: 'none',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {ROLES.map(r => (
-                    <option key={r.id} value={r.id}>{r.title}</option>
-                  ))}
-                </select>
-              </div>
-
               <button
                 type="submit"
                 disabled={authLoading}

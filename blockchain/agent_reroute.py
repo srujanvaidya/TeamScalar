@@ -6,7 +6,7 @@ import sys
 import os
 import json
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Ensure project root is in sys.path
 _project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -30,16 +30,17 @@ def main():
         # Extract ID from vessel name like "MAERSK (SHIP-002)"
         ship_id = ship_id.split("(")[-1].split(")")[0].strip()
 
+    now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
     event_data = {
-        "ship_id": ship_id,
         "container_id": args.container_id,
         "current_location": args.location,
         "origin": args.route[0] if args.route else args.location,
         "destination": args.route[-1] if args.route else args.location,
-        "route": args.route,
+        "route": json.dumps(args.route) if isinstance(args.route, list) else args.route,
         "scanned_by": "Agent_4_Blockchain_Anchor",
         "event_type": "HUMAN_APPROVED_REROUTE_ANCHOR",
-        "timestamp": datetime.utcnow().isoformat() + "Z"
+        "timestamp": now_iso
     }
 
     # Record container event and broadcast 0 POL transaction on Polygon Amoy
@@ -51,7 +52,7 @@ def main():
         "event_hash": record.get("event_hash"),
         "blockchain_status": record.get("blockchain_status", "CONFIRMED"),
         "polygonscan_url": f"https://amoy.polygonscan.com/tx/{record.get('polygon_tx_hash') or record.get('event_hash')}",
-        "timestamp": datetime.utcnow().isoformat() + "Z"
+        "timestamp": now_iso
     }
 
     print(json.dumps(output_payload))

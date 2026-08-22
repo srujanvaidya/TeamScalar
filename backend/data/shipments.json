@@ -30,9 +30,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 140.0,
-        "cost_usd": 12000.0,
-        "co2_kg": 1500.0,
+        "transit_hours": 508.9,
+        "cost_usd": 14940.0,
+        "co2_kg": 229.0,
         "sla_risk": "HIGH"
       },
       "blockchain_provenance": {
@@ -75,9 +75,9 @@
               4.4777
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 141.5,
+          "base_freight_cost_usd": 12136.0,
+          "co2_emissions_kg": 272.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -123,9 +123,9 @@
               4.4777
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 21.5,
+          "base_freight_cost_usd": 98686.0,
+          "co2_emissions_kg": 5805.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -169,9 +169,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 145.0,
-        "cost_usd": 12800.0,
-        "co2_kg": 1550.0,
+        "transit_hours": 310.7,
+        "cost_usd": 10430.0,
+        "co2_kg": 125.0,
         "sla_risk": "LOW"
       },
       "blockchain_provenance": {
@@ -209,9 +209,9 @@
               -74.161
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 64.7,
+          "base_freight_cost_usd": 4943.0,
+          "co2_emissions_kg": 111.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -252,9 +252,9 @@
               -74.161
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 11.7,
+          "base_freight_cost_usd": 36592.0,
+          "co2_emissions_kg": 2152.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -302,9 +302,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 150.0,
-        "cost_usd": 13600.0,
-        "co2_kg": 1600.0,
+        "transit_hours": 693.8,
+        "cost_usd": 19146.0,
+        "co2_kg": 326.0,
         "sla_risk": "HIGH"
       },
       "blockchain_provenance": {
@@ -347,9 +347,9 @@
               9.9937
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 132.1,
+          "base_freight_cost_usd": 11259.0,
+          "co2_emissions_kg": 252.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -395,9 +395,9 @@
               9.9937
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 20.9,
+          "base_freight_cost_usd": 94842.0,
+          "co2_emissions_kg": 5579.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -441,9 +441,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 155.0,
-        "cost_usd": 14400.0,
-        "co2_kg": 1650.0,
+        "transit_hours": 352.4,
+        "cost_usd": 11380.0,
+        "co2_kg": 147.0,
         "sla_risk": "LOW"
       },
       "blockchain_provenance": {
@@ -481,9 +481,9 @@
               -118.1937
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 142.9,
+          "base_freight_cost_usd": 12269.0,
+          "co2_emissions_kg": 275.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -519,9 +519,9 @@
               -118.1937
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 18.9,
+          "base_freight_cost_usd": 81937.0,
+          "co2_emissions_kg": 4820.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -565,9 +565,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 160.0,
-        "cost_usd": 15200.0,
-        "co2_kg": 1700.0,
+        "transit_hours": 336.8,
+        "cost_usd": 11024.0,
+        "co2_kg": 139.0,
         "sla_risk": "HIGH"
       },
       "blockchain_provenance": {
@@ -605,9 +605,9 @@
               55.0642
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 135.6,
+          "base_freight_cost_usd": 11584.0,
+          "co2_emissions_kg": 259.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -643,9 +643,9 @@
               55.0642
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 14.7,
+          "base_freight_cost_usd": 55194.0,
+          "co2_emissions_kg": 3247.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -689,9 +689,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 165.0,
-        "cost_usd": 16000.0,
-        "co2_kg": 1750.0,
+        "transit_hours": 169.8,
+        "cost_usd": 7225.0,
+        "co2_kg": 51.0,
         "sla_risk": "LOW"
       },
       "blockchain_provenance": {
@@ -729,9 +729,9 @@
               8.9463
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 57.6,
+          "base_freight_cost_usd": 4279.0,
+          "co2_emissions_kg": 96.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -767,9 +767,9 @@
               8.9463
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 7.1,
+          "base_freight_cost_usd": 7053.0,
+          "co2_emissions_kg": 415.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -813,9 +813,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 170.0,
-        "cost_usd": 16800.0,
-        "co2_kg": 1800.0,
+        "transit_hours": 157.6,
+        "cost_usd": 6948.0,
+        "co2_kg": 45.0,
         "sla_risk": "HIGH"
       },
       "blockchain_provenance": {
@@ -853,9 +853,9 @@
               139.6503
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 52.0,
+          "base_freight_cost_usd": 3746.0,
+          "co2_emissions_kg": 84.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -891,9 +891,9 @@
               139.6503
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 9.8,
+          "base_freight_cost_usd": 24443.0,
+          "co2_emissions_kg": 1438.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -937,9 +937,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 175.0,
-        "cost_usd": 17600.0,
-        "co2_kg": 1850.0,
+        "transit_hours": 317.2,
+        "cost_usd": 10578.0,
+        "co2_kg": 129.0,
         "sla_risk": "LOW"
       },
       "blockchain_provenance": {
@@ -977,9 +977,9 @@
               151.2093
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 126.4,
+          "base_freight_cost_usd": 10727.0,
+          "co2_emissions_kg": 240.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -1015,9 +1015,9 @@
               151.2093
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 17.2,
+          "base_freight_cost_usd": 71478.0,
+          "co2_emissions_kg": 4205.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -1061,9 +1061,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 180.0,
-        "cost_usd": 18400.0,
-        "co2_kg": 1900.0,
+        "transit_hours": 153.7,
+        "cost_usd": 6859.0,
+        "co2_kg": 43.0,
         "sla_risk": "HIGH"
       },
       "blockchain_provenance": {
@@ -1101,9 +1101,9 @@
               106.6297
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 50.1,
+          "base_freight_cost_usd": 3575.0,
+          "co2_emissions_kg": 80.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -1139,9 +1139,9 @@
               106.6297
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 8.1,
+          "base_freight_cost_usd": 13079.0,
+          "co2_emissions_kg": 769.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -1185,9 +1185,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 185.0,
-        "cost_usd": 19200.0,
-        "co2_kg": 1950.0,
+        "transit_hours": 96.1,
+        "cost_usd": 5548.0,
+        "co2_kg": 13.0,
         "sla_risk": "LOW"
       },
       "blockchain_provenance": {
@@ -1225,9 +1225,9 @@
               126.7052
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 23.2,
+          "base_freight_cost_usd": 1054.0,
+          "co2_emissions_kg": 24.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -1263,9 +1263,9 @@
               126.7052
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 7.1,
+          "base_freight_cost_usd": 7143.0,
+          "co2_emissions_kg": 420.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -1313,9 +1313,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 190.0,
-        "cost_usd": 20000.0,
-        "co2_kg": 2000.0,
+        "transit_hours": 396.1,
+        "cost_usd": 12373.0,
+        "co2_kg": 170.0,
         "sla_risk": "HIGH"
       },
       "blockchain_provenance": {
@@ -1353,9 +1353,9 @@
               1.3511
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 163.2,
+          "base_freight_cost_usd": 14178.0,
+          "co2_emissions_kg": 318.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -1391,9 +1391,9 @@
               1.3511
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 19.9,
+          "base_freight_cost_usd": 88649.0,
+          "co2_emissions_kg": 5215.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -1437,9 +1437,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 195.0,
-        "cost_usd": 20800.0,
-        "co2_kg": 2050.0,
+        "transit_hours": 284.0,
+        "cost_usd": 9822.0,
+        "co2_kg": 111.0,
         "sla_risk": "LOW"
       },
       "blockchain_provenance": {
@@ -1477,9 +1477,9 @@
               144.9631
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 110.9,
+          "base_freight_cost_usd": 9273.0,
+          "co2_emissions_kg": 208.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -1515,9 +1515,9 @@
               144.9631
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 15.7,
+          "base_freight_cost_usd": 61930.0,
+          "co2_emissions_kg": 3643.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -1561,9 +1561,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 200.0,
-        "cost_usd": 21600.0,
-        "co2_kg": 2100.0,
+        "transit_hours": 131.2,
+        "cost_usd": 6347.0,
+        "co2_kg": 31.0,
         "sla_risk": "HIGH"
       },
       "blockchain_provenance": {
@@ -1601,9 +1601,9 @@
               135.5023
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 39.6,
+          "base_freight_cost_usd": 2591.0,
+          "co2_emissions_kg": 58.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -1639,9 +1639,9 @@
               135.5023
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 8.7,
+          "base_freight_cost_usd": 17221.0,
+          "co2_emissions_kg": 1013.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -1685,9 +1685,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 205.0,
-        "cost_usd": 22400.0,
-        "co2_kg": 2150.0,
+        "transit_hours": 219.4,
+        "cost_usd": 8353.0,
+        "co2_kg": 77.0,
         "sla_risk": "LOW"
       },
       "blockchain_provenance": {
@@ -1725,9 +1725,9 @@
               138.5042
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 80.8,
+          "base_freight_cost_usd": 6449.0,
+          "co2_emissions_kg": 144.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -1763,9 +1763,9 @@
               138.5042
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 12.1,
+          "base_freight_cost_usd": 38675.0,
+          "co2_emissions_kg": 2275.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -1809,9 +1809,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 210.0,
-        "cost_usd": 23200.0,
-        "co2_kg": 2200.0,
+        "transit_hours": 124.7,
+        "cost_usd": 6200.0,
+        "co2_kg": 28.0,
         "sla_risk": "HIGH"
       },
       "blockchain_provenance": {
@@ -1849,9 +1849,9 @@
               -80.1918
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 52.7,
+          "base_freight_cost_usd": 3812.0,
+          "co2_emissions_kg": 85.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -1892,9 +1892,9 @@
               -80.1918
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 8.9,
+          "base_freight_cost_usd": 18384.0,
+          "co2_emissions_kg": 1081.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -1938,9 +1938,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 215.0,
-        "cost_usd": 24000.0,
-        "co2_kg": 2250.0,
+        "transit_hours": 220.2,
+        "cost_usd": 8372.0,
+        "co2_kg": 78.0,
         "sla_risk": "LOW"
       },
       "blockchain_provenance": {
@@ -1978,9 +1978,9 @@
               -77.1437
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 113.4,
+          "base_freight_cost_usd": 9510.0,
+          "co2_emissions_kg": 213.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -2021,9 +2021,9 @@
               -77.1437
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 14.4,
+          "base_freight_cost_usd": 53372.0,
+          "co2_emissions_kg": 3140.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -2067,9 +2067,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 220.0,
-        "cost_usd": 24800.0,
-        "co2_kg": 2300.0,
+        "transit_hours": 125.3,
+        "cost_usd": 6213.0,
+        "co2_kg": 28.0,
         "sla_risk": "HIGH"
       },
       "blockchain_provenance": {
@@ -2107,9 +2107,9 @@
               -56.1645
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 36.9,
+          "base_freight_cost_usd": 2332.0,
+          "co2_emissions_kg": 52.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -2145,9 +2145,9 @@
               -56.1645
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 8.1,
+          "base_freight_cost_usd": 13114.0,
+          "co2_emissions_kg": 771.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -2191,9 +2191,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 225.0,
-        "cost_usd": 25600.0,
-        "co2_kg": 2350.0,
+        "transit_hours": 90.3,
+        "cost_usd": 5417.0,
+        "co2_kg": 10.0,
         "sla_risk": "LOW"
       },
       "blockchain_provenance": {
@@ -2231,9 +2231,9 @@
               5.3698
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 20.5,
+          "base_freight_cost_usd": 801.0,
+          "co2_emissions_kg": 18.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -2269,9 +2269,9 @@
               5.3698
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 6.9,
+          "base_freight_cost_usd": 5446.0,
+          "co2_emissions_kg": 320.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -2315,9 +2315,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 230.0,
-        "cost_usd": 26400.0,
-        "co2_kg": 2400.0,
+        "transit_hours": 148.2,
+        "cost_usd": 6732.0,
+        "co2_kg": 40.0,
         "sla_risk": "HIGH"
       },
       "blockchain_provenance": {
@@ -2355,9 +2355,9 @@
               -17.4677
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 47.5,
+          "base_freight_cost_usd": 3332.0,
+          "co2_emissions_kg": 75.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -2393,9 +2393,9 @@
               -17.4677
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 9.6,
+          "base_freight_cost_usd": 22650.0,
+          "co2_emissions_kg": 1332.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -2439,9 +2439,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 235.0,
-        "cost_usd": 27200.0,
-        "co2_kg": 2450.0,
+        "transit_hours": 155.5,
+        "cost_usd": 6900.0,
+        "co2_kg": 44.0,
         "sla_risk": "LOW"
       },
       "blockchain_provenance": {
@@ -2479,9 +2479,9 @@
               32.3019
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 51.0,
+          "base_freight_cost_usd": 3653.0,
+          "co2_emissions_kg": 82.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -2517,9 +2517,9 @@
               32.3019
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 9.6,
+          "base_freight_cost_usd": 23043.0,
+          "co2_emissions_kg": 1355.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -2563,9 +2563,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 240.0,
-        "cost_usd": 28000.0,
-        "co2_kg": 2500.0,
+        "transit_hours": 166.9,
+        "cost_usd": 7159.0,
+        "co2_kg": 50.0,
         "sla_risk": "HIGH"
       },
       "blockchain_provenance": {
@@ -2603,9 +2603,9 @@
               39.2083
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 56.3,
+          "base_freight_cost_usd": 4151.0,
+          "co2_emissions_kg": 93.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -2641,9 +2641,9 @@
               39.2083
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 9.6,
+          "base_freight_cost_usd": 22984.0,
+          "co2_emissions_kg": 1352.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -2687,9 +2687,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 245.0,
-        "cost_usd": 28800.0,
-        "co2_kg": 2550.0,
+        "transit_hours": 108.7,
+        "cost_usd": 5835.0,
+        "co2_kg": 19.0,
         "sla_risk": "LOW"
       },
       "blockchain_provenance": {
@@ -2727,9 +2727,9 @@
               -122.2711
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 29.1,
+          "base_freight_cost_usd": 1607.0,
+          "co2_emissions_kg": 36.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -2765,9 +2765,9 @@
               -122.2711
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 7.7,
+          "base_freight_cost_usd": 10864.0,
+          "co2_emissions_kg": 639.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -2811,9 +2811,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 250.0,
-        "cost_usd": 29600.0,
-        "co2_kg": 2600.0,
+        "transit_hours": 92.3,
+        "cost_usd": 5463.0,
+        "co2_kg": 11.0,
         "sla_risk": "HIGH"
       },
       "blockchain_provenance": {
@@ -2851,9 +2851,9 @@
               10.2039
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 21.5,
+          "base_freight_cost_usd": 890.0,
+          "co2_emissions_kg": 20.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -2889,9 +2889,9 @@
               10.2039
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 6.4,
+          "base_freight_cost_usd": 2625.0,
+          "co2_emissions_kg": 154.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -2935,9 +2935,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 255.0,
-        "cost_usd": 30400.0,
-        "co2_kg": 2650.0,
+        "transit_hours": 89.7,
+        "cost_usd": 5402.0,
+        "co2_kg": 9.0,
         "sla_risk": "LOW"
       },
       "blockchain_provenance": {
@@ -2975,9 +2975,9 @@
               -6.2603
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 20.3,
+          "base_freight_cost_usd": 774.0,
+          "co2_emissions_kg": 17.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -3013,9 +3013,9 @@
               -6.2603
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 6.8,
+          "base_freight_cost_usd": 5227.0,
+          "co2_emissions_kg": 307.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -3059,9 +3059,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 260.0,
-        "cost_usd": 31200.0,
-        "co2_kg": 2700.0,
+        "transit_hours": 98.4,
+        "cost_usd": 5601.0,
+        "co2_kg": 14.0,
         "sla_risk": "HIGH"
       },
       "blockchain_provenance": {
@@ -3099,9 +3099,9 @@
               28.6498
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 24.3,
+          "base_freight_cost_usd": 1155.0,
+          "co2_emissions_kg": 26.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -3137,9 +3137,9 @@
               28.6498
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 7.1,
+          "base_freight_cost_usd": 6885.0,
+          "co2_emissions_kg": 405.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -3183,9 +3183,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 265.0,
-        "cost_usd": 32000.0,
-        "co2_kg": 2750.0,
+        "transit_hours": 95.6,
+        "cost_usd": 5536.0,
+        "co2_kg": 12.0,
         "sla_risk": "LOW"
       },
       "blockchain_provenance": {
@@ -3223,9 +3223,9 @@
               71.5
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 23.0,
+          "base_freight_cost_usd": 1031.0,
+          "co2_emissions_kg": 23.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -3261,9 +3261,9 @@
               71.5
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 6.3,
+          "base_freight_cost_usd": 2210.0,
+          "co2_emissions_kg": 130.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -3307,9 +3307,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 270.0,
-        "cost_usd": 32800.0,
-        "co2_kg": 2800.0,
+        "transit_hours": 111.0,
+        "cost_usd": 5888.0,
+        "co2_kg": 20.0,
         "sla_risk": "HIGH"
       },
       "blockchain_provenance": {
@@ -3347,9 +3347,9 @@
               88.3639
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 30.2,
+          "base_freight_cost_usd": 1707.0,
+          "co2_emissions_kg": 38.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -3385,9 +3385,9 @@
               88.3639
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 7.8,
+          "base_freight_cost_usd": 11546.0,
+          "co2_emissions_kg": 679.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -3431,9 +3431,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 275.0,
-        "cost_usd": 33600.0,
-        "co2_kg": 2850.0,
+        "transit_hours": 87.6,
+        "cost_usd": 5354.0,
+        "co2_kg": 8.0,
         "sla_risk": "LOW"
       },
       "blockchain_provenance": {
@@ -3471,9 +3471,9 @@
               62.3225
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 19.3,
+          "base_freight_cost_usd": 681.0,
+          "co2_emissions_kg": 15.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -3509,9 +3509,9 @@
               62.3225
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 6.6,
+          "base_freight_cost_usd": 4016.0,
+          "co2_emissions_kg": 236.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -3555,9 +3555,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 280.0,
-        "cost_usd": 34400.0,
-        "co2_kg": 2900.0,
+        "transit_hours": 132.5,
+        "cost_usd": 6375.0,
+        "co2_kg": 32.0,
         "sla_risk": "HIGH"
       },
       "blockchain_provenance": {
@@ -3595,9 +3595,9 @@
               100.3327
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 40.2,
+          "base_freight_cost_usd": 2645.0,
+          "co2_emissions_kg": 59.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -3633,9 +3633,9 @@
               100.3327
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 8.8,
+          "base_freight_cost_usd": 17815.0,
+          "co2_emissions_kg": 1048.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,
@@ -3679,9 +3679,9 @@
         ]
       ],
       "metrics": {
-        "transit_hours": 285.0,
-        "cost_usd": 35200.0,
-        "co2_kg": 2950.0,
+        "transit_hours": 97.0,
+        "cost_usd": 5568.0,
+        "co2_kg": 13.0,
         "sla_risk": "LOW"
       },
       "blockchain_provenance": {
@@ -3719,9 +3719,9 @@
               172.7214
             ]
           ],
-          "estimated_transit_hours": 48.0,
-          "base_freight_cost_usd": 11500.0,
-          "co2_emissions_kg": 950.0,
+          "estimated_transit_hours": 23.7,
+          "base_freight_cost_usd": 1093.0,
+          "co2_emissions_kg": 24.0,
           "risk_grade": "LOW",
           "color_gradient": [
             56,
@@ -3757,9 +3757,9 @@
               172.7214
             ]
           ],
-          "estimated_transit_hours": 14.5,
-          "base_freight_cost_usd": 28400.0,
-          "co2_emissions_kg": 2100.0,
+          "estimated_transit_hours": 7.0,
+          "base_freight_cost_usd": 6551.0,
+          "co2_emissions_kg": 385.0,
           "risk_grade": "LOW",
           "color_gradient": [
             30,

@@ -229,7 +229,7 @@ export default function CommandCenterPage() {
     const location = waypoints[0] || selectedShipment.origin;
 
     try {
-      const res = await fetch('http://localhost:8000/api/v1/blockchain/reroute', {
+      let res = await fetch('/api/blockchain/reroute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -240,15 +240,30 @@ export default function CommandCenterPage() {
         })
       });
 
+      if (!res.ok) {
+        res = await fetch('http://localhost:8000/api/v1/blockchain/reroute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ship_id: selectedShipment.vessel_name || 'SHIP-002',
+            container_id: selectedShipment.cargo_id || 'CONT-8001',
+            location: location,
+            route: waypoints
+          })
+        });
+      }
+
       if (res.ok) {
         const receipt = await res.json();
         console.log('Polygon Amoy Transaction Broadcast Receipt:', receipt);
 
-        if (receipt.tx_hash) {
+        const txHash = receipt.tx_hash || receipt.polygon_tx_hash || receipt.event_hash;
+
+        if (txHash) {
           setShipments(prev => prev.map(s => {
             if (s.cargo_id === selectedShipment.cargo_id) {
               const baseProv = s.blockchain_provenance || {
-                tx_hash: receipt.tx_hash,
+                tx_hash: txHash,
                 block_number: 4829210,
                 contract_address: '0xbe6E842E5CCD8752EF538B7874530F3bE702e8Ae',
                 origin_point: s.origin,
@@ -259,7 +274,7 @@ export default function CommandCenterPage() {
                 ...s,
                 blockchain_provenance: {
                   ...baseProv,
-                  tx_hash: receipt.tx_hash,
+                  tx_hash: txHash,
                   verified_on_chain: true,
                   timestamp: receipt.anchored_timestamp || new Date().toISOString()
                 }
