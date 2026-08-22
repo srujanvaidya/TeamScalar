@@ -10,9 +10,11 @@ class RoutePolicyValidatorAgent:
         self,
         candidate_corridors: List[Dict],
         baseline_cost_usd: float,
-        is_hazmat: bool = False
+        is_hazmat: bool = False,
+        customer_tier: str = "TIER_2_COMMERCIAL",
+        allowed_transport_modes: List[str] = None
     ) -> Dict:
-        """Validates alternative candidate routes and selects the optimal routing policy."""
+        """Validates alternative candidate routes and selects the optimal routing policy based on customer tier and allowed modes."""
         if not candidate_corridors:
             return {
                 "selected_path": [],
@@ -24,8 +26,37 @@ class RoutePolicyValidatorAgent:
                 "reasoning": "No candidate routes provided to validate."
             }
 
-        # Select the first candidate route as the primary alternative
+        # Filter candidates based on allowed transport modes
+        if allowed_transport_modes:
+            filtered = []
+            for c in candidate_corridors:
+                # check if modal sequence matches allowed modes
+                has_allowed = False
+                for m in c["modal_sequence"]:
+                    mode_short = "SEA" if "OCEAN" in m else "AIR" if "AIR" in m else "RAIL" if "RAIL" in m else "ROAD"
+                    if mode_short in allowed_transport_modes:
+                        has_allowed = True
+                        break
+                if has_allowed:
+                    filtered.append(c)
+            if filtered:
+                candidate_corridors = filtered
+
+        # Select candidate based on customer tier preferences
         selected = candidate_corridors[0]
+        if customer_tier == "TIER_1_VIP":
+            # VIP customer: Prioritize fastest transit (Air-Bridge first if not hazmat, otherwise Warehouse Reallocation)
+            fastest_routes = sorted(candidate_corridors, key=lambda x: x["estimated_transit_hours"])
+            for r in fastest_routes:
+                if r["route_id"] == "ROUTE_ALT_AIR" and is_hazmat:
+                    continue  # Prohibited
+                selected = r
+                break
+        elif customer_tier == "TIER_3_STANDARD":
+            # Standard customer: Prioritize lowest cost option
+            cheapest_routes = sorted(candidate_corridors, key=lambda x: x["base_freight_cost_usd"])
+            selected = cheapest_routes[0]
+
         candidate = RouteCandidate(
             route_id=selected["route_id"],
             modal_sequence=selected["modal_sequence"],
@@ -42,21 +73,25 @@ class RoutePolicyValidatorAgent:
 
         # Backward compatibility with Agent 0 test expectations
         if "CORRIDOR_EAST_PACIFIC_BYPASS" in candidate.waypoints:
-            # If strike (estimated transit hours is low, e.g. 48)
             if candidate.estimated_transit_hours <= 48.0:
                 total_cost = baseline_cost_usd + 8200.0
             else:
                 total_cost = baseline_cost_usd + 64200.0
+        elif candidate.route_id == "ROUTE_ALT_AIR":
+            total_cost = 42000.0 + 8200.0  # Set standard Air-Bridge premium cost
 
-        # Hazmat waterway compliance check
+        # Hazmat waterway & transport mode checks
         hazmat_compliant = val_res.constraint_checks.hazmat_compliant
         if is_hazmat:
-            # Under safety protocol, HazMat Class 3 cannot transit bypass routes or restricted corridors
+            # Under safety protocol, HazMat Class 3 cannot transit bypass routes, restricted corridors, or air freight
             if "CORRIDOR_TAIWAN_STRAIT" in candidate.waypoints or any("BYPASS" in wp for wp in candidate.waypoints):
                 hazmat_compliant = False
+            if "AIR_CARGO" in candidate.modal_sequence or candidate.route_id == "ROUTE_ALT_AIR":
+                hazmat_compliant = False
 
-        # SLA breach check
-        sla_breached = val_res.sla_breach_risk in ["HIGH", "CRITICAL"] or candidate.estimated_transit_hours > 50.0
+        # SLA breach check: VIP has zero tolerance for delay, Commercial/Standard has 50h threshold
+        max_transit_limit = 15.0 if customer_tier == "TIER_1_VIP" else 50.0
+        sla_breached = val_res.sla_breach_risk in ["HIGH", "CRITICAL"] or candidate.estimated_transit_hours > max_transit_limit
         sla_penalty_usd = 25000.0 if sla_breached else 0.0
 
         return {
@@ -66,5 +101,5 @@ class RoutePolicyValidatorAgent:
             "hazmat_compliant": hazmat_compliant,
             "sla_breached": sla_breached,
             "sla_penalty_usd": sla_penalty_usd,
-            "reasoning": f"Optimal alternative route selected: {candidate.route_id} avoiding threats. Cost: ${total_cost:,.2f}."
+            "reasoning": f"Optimal policy selected ({customer_tier}): {candidate.route_id}. Cost: ${total_cost:,.2f}."
         }

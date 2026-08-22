@@ -26,6 +26,10 @@ class ShipmentContext(BaseModel):
     baseline_cost_usd: float = Field(..., description="Standard base cost of the original route")
     sla_deadline_epoch: int = Field(..., description="Epoch timestamp of SLA delivery deadline")
     default_corridor_path: List[str] = Field(..., description="Standard sequence of logistics corridors")
+    customer_tier: str = Field(default="TIER_2_COMMERCIAL", description="Customer priority tier")
+    sku_id: Optional[str] = Field(default="SKU-PRECISION-SEMI-808", description="Product SKU identifier")
+    quantity_units: int = Field(default=500, description="Quantity being shipped")
+    allowed_transport_modes: List[str] = Field(default_factory=lambda: ["SEA", "AIR", "RAIL", "ROAD"], description="Allowed transport modes")
 
 class OrchestrationResult(BaseModel):
     shipment_id: str = Field(..., description="ID of the shipment context evaluated")
@@ -121,6 +125,7 @@ class MasterOrchestratorAgent:
         sla_deadline_breached = False
         sla_penalty = 0.0
 
+        tradeoff_md = ""
         if reroute_selected:
             # Step 3: Graph Exploration (Agent 2)
             candidate_corridors = await self.navigator_agent.find_alternative_corridors(
@@ -134,7 +139,9 @@ class MasterOrchestratorAgent:
             optimal_plan = await self.validator_agent.select_optimal_policy(
                 candidate_corridors=candidate_corridors,
                 baseline_cost_usd=context.baseline_cost_usd,
-                is_hazmat=context.is_hazmat
+                is_hazmat=context.is_hazmat,
+                customer_tier=context.customer_tier,
+                allowed_transport_modes=context.allowed_transport_modes
             )
 
             proposed_path = optimal_plan["selected_path"]
@@ -142,6 +149,16 @@ class MasterOrchestratorAgent:
             hazmat_compliant = optimal_plan["hazmat_compliant"]
             sla_deadline_breached = optimal_plan["sla_breached"]
             sla_penalty = optimal_plan["sla_penalty_usd"]
+
+            # Generate comparative tradeoff matrix in Markdown
+            matrix = [
+                "### Multi-Modal Tradeoff Matrix",
+                "| Route ID | Modes | Transit (Hours) | Base Cost (USD) |",
+                "|---|---|---|---|",
+            ]
+            for c in candidate_corridors:
+                matrix.append(f"| {c['route_id']} | {', '.join(c['modal_sequence'])} | {c['estimated_transit_hours']}h | ${c['base_freight_cost_usd']:,.2f} |")
+            tradeoff_md = "\n".join(matrix)
         else:
             if context.is_hazmat:
                 hazmat_compliant = True
@@ -156,6 +173,9 @@ class MasterOrchestratorAgent:
             sla_penalty_usd=sla_penalty,
             context_notes=f"Orchestration route deviation plan for {context.container_id}."
         )
+
+        if tradeoff_md:
+            eval_res.justification += f"\n\n{tradeoff_md}"
 
         # Step 6: Cryptographic Hash & Verdict Synthesis
         audit_raw = f"{context.container_id}:{eval_res.decision}:{proposed_cost}:{eval_res.risk_level}"

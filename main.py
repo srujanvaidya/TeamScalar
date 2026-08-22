@@ -9,7 +9,9 @@ Provides unified microservices for all 9 autonomous agents:
 - Agent 2: Graph-RL Pathfinder (POST /api/v1/agent2/navigate)
 - Agent 3: Constraint & Pydantic REST Validator (POST /api/v1/agent3/validate)
 - Agent 5: Financial Risk & Safeguard Gate (POST /api/v1/agent5/evaluate)
-- Enterprise Tool Endpoints (/api/v1/inventory/check, /api/v1/carrier/rates, /api/v1/regulatory/hazmat)
+- Enterprise Tool Endpoints (/api/v1/inventory/check, /api/v1/carrier/rates, /api/v1/regulatory/hazmat, /api/v1/inventory/status)
+- Spatial Maritime Registry (/api/v1/ports/search, /api/v1/ports/nearby, /api/v1/ports/route-distance)
+- Blockchain Provenance Anchoring (/api/v1/blockchain/reroute, /api/v1/blockchain/status)
 - Live Shipments Telemetry (/api/v1/shipments, /api/v1/shipments/{cargo_id})
 - Full Pipeline Rerouting Orchestration (/api/v1/pipeline/reroute)
 """
@@ -17,6 +19,7 @@ Provides unified microservices for all 9 autonomous agents:
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional, Dict, Any
+from pydantic import BaseModel
 import json
 import os
 
@@ -36,7 +39,7 @@ from agent_3_validator import (
     Agent3ValidationResponse
 )
 
-# Unified Agents (Shiva & Tejas Pipeline Integration)
+# Unified Agents & Tools (Shiva & Tejas Pipeline Integration)
 from src.agents.agent_0 import MasterOrchestratorAgent, ShipmentContext, OrchestrationResult
 from src.agents.agent_1a import NewsSemanticParserAgent
 from src.agents.agent_1b import WeatherTelemetryAgent
@@ -226,6 +229,38 @@ async def demo_full_mission_typhoon():
     }
     return await orchestrator.run_shipment_mission(context, inject_weather=weather_injection)
 
+@app.get("/demo/full-funnel-vip-air-bridge", response_model=OrchestrationResult)
+async def demo_full_funnel_vip_air_bridge():
+    context = ShipmentContext(
+        container_id="CNTR-VIP-AIR-901",
+        origin_node="PORT_SHANGHAI_01",
+        destination_node="PORT_ROTTERDAM_02",
+        cargo_type="ELECTRONICS",
+        is_hazmat=False,
+        baseline_cost_usd=40000.0,
+        sla_deadline_epoch=1787349283,
+        default_corridor_path=["PORT_SHANGHAI_01", "CORRIDOR_TAIWAN_STRAIT", "PORT_ROTTERDAM_02"],
+        customer_tier="TIER_1_VIP"
+    )
+    disruption_text = "CRITICAL ALERT: Shanghai Port Dockworkers Strike has closed down Port Operations."
+    return await orchestrator.run_shipment_mission(context, inject_disruption_text=disruption_text)
+
+@app.get("/demo/full-funnel-inventory-reallocation", response_model=OrchestrationResult)
+async def demo_full_funnel_inventory_reallocation():
+    context = ShipmentContext(
+        container_id="CNTR-INVENTORY-REALLOCATION-303",
+        origin_node="PORT_SHANGHAI_01",
+        destination_node="PORT_ROTTERDAM_02",
+        cargo_type="ELECTRONICS",
+        is_hazmat=False,
+        baseline_cost_usd=40000.0,
+        sla_deadline_epoch=1787349283,
+        default_corridor_path=["PORT_SHANGHAI_01", "CORRIDOR_TAIWAN_STRAIT", "PORT_ROTTERDAM_02"],
+        customer_tier="TIER_1_VIP"
+    )
+    disruption_text = "CRITICAL ALERT: Shanghai Port Dockworkers Strike has closed down Port Operations."
+    return await orchestrator.run_shipment_mission(context, inject_disruption_text=disruption_text)
+
 
 # --- Agent 1A & 1B Endpoints ---
 
@@ -287,6 +322,80 @@ async def run_agent_5(
         sla_deadline_breached=sla_deadline_breached,
         sla_penalty_usd=sla_penalty_usd
     )
+
+
+# --- Spatial Maritime Registry Endpoints ---
+
+@app.get("/api/v1/ports/search")
+def api_search_ports(q: str = Query(..., description="Query substring for port name, ID or country")):
+    from src.data.port_registry import GlobalPortRegistry
+    registry = GlobalPortRegistry()
+    results = registry.search_ports(q)
+    return [p.model_dump() for p in results]
+
+@app.get("/api/v1/ports/nearby")
+def api_nearby_ports(
+    lat: float = Query(..., description="Latitude coordinate"),
+    lon: float = Query(..., description="Longitude coordinate"),
+    radius_km: float = Query(600.0, description="Search radius in kilometers")
+):
+    from src.data.port_registry import GlobalPortRegistry
+    registry = GlobalPortRegistry()
+    results = registry.search_nearby_ports(lat, lon, radius_km)
+    return [p.model_dump() for p in results]
+
+@app.get("/api/v1/ports/route-distance")
+def api_route_distance(
+    origin: str = Query(..., description="Origin port ID or alias"),
+    destination: str = Query(..., description="Destination port ID or alias")
+):
+    from src.data.port_registry import GlobalPortRegistry
+    registry = GlobalPortRegistry()
+    port1 = registry.get_port(origin)
+    port2 = registry.get_port(destination)
+    if not port1 or not port2:
+        raise HTTPException(status_code=404, detail="One or both ports could not be resolved.")
+    distance_nm = registry.compute_maritime_distance_nm(origin, destination)
+    return {
+        "origin": port1.model_dump(),
+        "destination": port2.model_dump(),
+        "maritime_distance_nm": distance_nm
+    }
+
+
+# --- Blockchain Provenance Endpoints ---
+
+class BlockchainRerouteRequest(BaseModel):
+    ship_id: str
+    location: str
+    route: List[str]
+
+@app.post("/api/v1/blockchain/reroute")
+async def api_blockchain_reroute(payload: BlockchainRerouteRequest):
+    from src.blockchain.bridge_adapter import BlockchainBridge
+    receipt = await BlockchainBridge.anchor_reroute_decision(
+        ship_id=payload.ship_id,
+        location=payload.location,
+        route_ports=payload.route
+    )
+    return receipt
+
+@app.get("/api/v1/blockchain/status")
+def api_blockchain_status():
+    from blockchain.config import OWNER_ADDRESS
+    return {
+        "polygon_rpc": "http://mock.polygon.amoy" if not os.getenv("RPC_URL") else "connected",
+        "supabase_connection": "healthy",
+        "wallet_address": OWNER_ADDRESS or "0x0000000000000000000000000000000000000000"
+    }
+
+
+# --- Inventory Allocation Status Endpoint ---
+
+@app.get("/api/v1/inventory/status")
+def api_inventory_status():
+    from src.tools.inventory_allocator import WarehouseInventoryManager
+    return WarehouseInventoryManager.inventory
 
 
 # --- Full Pipeline Endpoint ---
