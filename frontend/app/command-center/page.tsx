@@ -15,34 +15,39 @@ const MODE_LABEL_MAP: Record<string, string> = {
   AIR_FREIGHT: 'AIR FREIGHT',
 };
 
-const PORT_COORDS: Record<string, [number, number]> = {
+const AREA_COORDS: Record<string, [number, number]> = {
+  'Shanghai Port': [31.2304, 121.4737],
   'PORT_SHANGHAI_01': [31.2304, 121.4737],
   'PORT_SHANGHAI': [31.2304, 121.4737],
-  'CNSHA': [31.2304, 121.4737],
-  'PORT_ROTTERDAM_02': [51.9244, 4.4777],
-  'PORT_ROTTERDAM': [51.9244, 4.4777],
-  'NLRTM': [51.9244, 4.4777],
+  'Port of Singapore': [1.3521, 103.8198],
   'PORT_SINGAPORE_01': [1.3521, 103.8198],
   'PORT_SINGAPORE': [1.3521, 103.8198],
-  'SGSIN': [1.3521, 103.8198],
-  'PORT_DUBAI_01': [25.2048, 55.2708],
-  'PORT_DUBAI': [25.2048, 55.2708],
-  'AEEDX': [25.2048, 55.2708],
+  'Suez Canal': [29.9753, 32.5599],
+  'Port of Rotterdam': [51.9244, 4.4777],
+  'PORT_ROTTERDAM_02': [51.9244, 4.4777],
+  'PORT_ROTTERDAM': [51.9244, 4.4777],
+  'Port of Los Angeles': [33.7426, -118.2673],
+  'Panama Canal': [9.0800, -79.6800],
+  'Port of New York/New Jersey': [40.6681, -74.1610],
+  'Port of Nhava Sheva': [18.9500, 72.9500],
   'PORT_NHAVA_SHEVA_02': [18.9500, 72.9500],
-  'PORT_NHAVA_SHEVA': [18.9500, 72.9500],
-  'INNSA': [18.9500, 72.9500],
+  'Port of Dubai': [25.2048, 55.2708],
+  'PORT_DUBAI_01': [25.2048, 55.2708],
   'HUB_SHANGHAI': [31.2304, 121.4737],
   'RAIL_CHENGDU': [30.5728, 104.0668],
   'HUB_WARSAW': [52.2370, 21.0175],
   'DIST_BERLIN': [52.5200, 13.4050],
   'AIR_DUBAI': [25.2532, 55.3657],
   'HUB_FRANKFURT_01': [50.1109, 8.6821],
-  'CORRIDOR_TAIWAN_STRAIT': [24.5000, 119.8000],
-  'CORRIDOR_STRAIT_OF_MALACCA': [2.5000, 101.5000],
 };
 
-function resolveNodeCoords(nodeName: string): [number, number] {
-  if (PORT_COORDS[nodeName]) return PORT_COORDS[nodeName];
+function resolveAreaCoords(areaName: string): [number, number] {
+  if (AREA_COORDS[areaName]) return AREA_COORDS[areaName];
+  for (const [key, coords] of Object.entries(AREA_COORDS)) {
+    if (areaName.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(areaName.toLowerCase())) {
+      return coords;
+    }
+  }
   return [20.0, 75.0];
 }
 
@@ -53,8 +58,8 @@ export default function CommandCenterPage() {
   const [loading, setLoading] = useState(true);
 
   const [shipments, setShipments] = useState<Shipment[]>([]);
-  const [selectedCargoId, setSelectedCargoId] = useState<string>('CONT-99482-SH');
-  const [activeAltRouteId, setActiveAltRouteId] = useState<string | null>('ROUTE_ALT_A');
+  const [selectedCargoId, setSelectedCargoId] = useState<string>('CONT-9010');
+  const [activeAltRouteId, setActiveAltRouteId] = useState<string | null>('ROUTE_SUPABASE_CONT-9010');
   const [showJsonMsg, setShowJsonMsg] = useState(false);
   const [viewTab, setViewTab] = useState<'LEGS' | 'ALTERNATES'>('LEGS');
   const [funnelOpen, setFunnelOpen] = useState(false);
@@ -64,20 +69,26 @@ export default function CommandCenterPage() {
     setLoading(true);
     let allShipments: Shipment[] = [];
 
-    // Step 1: Fetch directly from Supabase tables (active_routes, shipments, containers)
+    // Step 1: Fetch directly from Supabase container_events and ships tables
     try {
-      const { data: routeData } = await supabase.from('active_routes').select('*');
-      const { data: shipmentData } = await supabase.from('shipments').select('*');
-      const rawRows = (shipmentData && shipmentData.length) ? shipmentData : (routeData || []);
+      const { data: ships } = await supabase.from('ships').select('*');
+      const shipNameMap: Record<string, string> = {};
+      if (ships && ships.length) {
+        ships.forEach((s: any) => {
+          shipNameMap[s.id] = s.name;
+        });
+      }
 
-      if (rawRows && rawRows.length > 0) {
-        const parsedSupabase: Shipment[] = rawRows.map((row: any, idx: number) => {
-          const cargoId = row.cargo_id || row.container_id || `CONT-SUPABASE-${idx + 1}`;
-          const vesselName = row.vessel_name || row.ship_name || row.ship || `SUPABASE VESSEL ${idx + 1}`;
-          const origin = row.origin || 'PORT_SHANGHAI_01';
-          const destination = row.destination || 'PORT_ROTTERDAM_02';
+      const { data: containerEvents } = await supabase.from('container_events').select('*');
 
-          // Extract route column (array of area nodes or coordinates)
+      if (containerEvents && containerEvents.length > 0) {
+        const parsedSupabase: Shipment[] = containerEvents.map((row: any, idx: number) => {
+          const cargoId = row.container_id || `CONT-SUPABASE-${idx + 1}`;
+          const shipName = shipNameMap[row.ship_id] || row.ship_id || 'SUPABASE VESSEL';
+          const origin = row.origin || 'Shanghai Port';
+          const destination = row.destination || 'Port of Rotterdam';
+
+          // Extract route column (array of area strings)
           let routeAreas: string[] = [];
           if (Array.isArray(row.route)) {
             routeAreas = row.route;
@@ -87,43 +98,62 @@ export default function CommandCenterPage() {
             routeAreas = [origin, destination];
           }
 
-          const routeCoords: [number, number][] = routeAreas.map(area => resolveNodeCoords(area));
+          const routeCoords: [number, number][] = routeAreas.map(area => resolveAreaCoords(area));
+
+          const legBreakdown: RouteLeg[] = [];
+          for (let i = 0; i < routeAreas.length - 1; i++) {
+            legBreakdown.push({
+              leg_id: `SUPABASE-LEG-0${i + 1}`,
+              from_node: routeAreas[i],
+              from_type: 'OCEAN_PORT',
+              to_node: routeAreas[i + 1],
+              to_type: 'OCEAN_PORT',
+              mode: 'MARITIME',
+              distance_km: 1200.0 * (i + 1),
+              transit_hours: 24.0 * (i + 1),
+              departure_time: row.timestamp || new Date().toISOString(),
+              arrival_time: new Date(Date.now() + (i + 1) * 86400000).toISOString(),
+              tx_hash: row.polygon_tx_hash || row.event_hash || '0x' + Math.random().toString(16).slice(2)
+            });
+          }
 
           return {
             cargo_id: cargoId,
-            mode: row.mode || 'MARITIME',
-            vessel_name: vesselName,
+            mode: 'MARITIME',
+            vessel_name: `${shipName} (${row.ship_id || 'SHIP'})`,
             origin: origin,
             destination: destination,
-            current_status: row.current_status || row.status || 'IN_TRANSIT',
+            current_status: row.blockchain_status === 'CONFIRMED' ? 'ON_CHAIN_VERIFIED' : 'IN_TRANSIT',
             current_coordinates: routeCoords[0] || [31.2304, 121.4737],
             active_route_coords: routeCoords,
             metrics: {
-              transit_hours: row.cost_usd ? Math.round(row.cost_usd / 100) : 120.0,
-              cost_usd: row.cost_usd || 15000.0,
-              co2_kg: row.co2_emissions_kg || 1400.0,
+              transit_hours: 96.0,
+              cost_usd: 14500.0,
+              co2_kg: 1200.0,
               sla_risk: 'LOW'
             },
             blockchain_provenance: {
-              tx_hash: row.tx_hash || '0x' + Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2),
-              block_number: 4829150 + idx,
+              tx_hash: row.polygon_tx_hash || row.event_hash,
+              block_number: 4829200 + idx,
               contract_address: '0xbe6E842E5CCD8752EF538B7874530F3bE702e8Ae',
               origin_point: `${origin} [${routeCoords[0]?.[0]}, ${routeCoords[0]?.[1]}]`,
               destination_point: `${destination} [${routeCoords[routeCoords.length - 1]?.[0]}, ${routeCoords[routeCoords.length - 1]?.[1]}]`,
-              verified_on_chain: true,
-              timestamp: new Date().toISOString()
+              verified_on_chain: row.blockchain_status === 'CONFIRMED',
+              timestamp: row.timestamp || row.created_at
             },
+            route_legs: legBreakdown,
             alternate_routes: [
               {
-                route_id: `ROUTE_SUPABASE_${idx + 1}`,
-                modal_sequence: ['ROAD_TRUCK', 'RAIL_FREIGHT'],
+                route_id: `ROUTE_SUPABASE_${cargoId}`,
+                modal_sequence: ['MARITIME', 'OCEAN_FREIGHT'],
                 waypoints: routeAreas,
                 waypoint_coords: routeCoords,
-                estimated_transit_hours: 98.0,
-                base_freight_cost_usd: (row.cost_usd || 15000) * 1.1,
-                co2_emissions_kg: 1100.0,
+                estimated_transit_hours: 96.0,
+                base_freight_cost_usd: 14500.0,
+                co2_emissions_kg: 1200.0,
                 risk_grade: 'LOW',
-                color_gradient: [56, 142, 60]
+                color_gradient: [56, 142, 60],
+                leg_breakdown: legBreakdown
               }
             ]
           };
@@ -131,7 +161,7 @@ export default function CommandCenterPage() {
         allShipments = [...parsedSupabase];
       }
     } catch (e) {
-      console.warn('Supabase fetch error:', e);
+      console.warn('Supabase client fetch warning:', e);
     }
 
     // Step 2: Fetch from Next.js API / FastAPI backend
@@ -232,7 +262,7 @@ export default function CommandCenterPage() {
           {/* Ship & Cargo Container Selector Dropdown (Plots chosen ship & container route on Map) */}
           {shipments.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: '#888888', fontSize: 11, fontWeight: 600 }}>SELECT SHIP / CARGO:</span>
+              <span style={{ color: '#888888', fontSize: 11, fontWeight: 600 }}>SELECT SHIP / CONTAINER:</span>
               <select
                 value={selectedCargoId}
                 onChange={(e) => {
@@ -249,7 +279,7 @@ export default function CommandCenterPage() {
               >
                 {shipments.map(s => (
                   <option key={s.cargo_id} value={s.cargo_id}>
-                    {s.vessel_name} ({s.cargo_id}) — {s.origin} ➔ {s.destination}
+                    {s.vessel_name} — Container: {s.cargo_id} ({s.origin} ➔ {s.destination})
                   </option>
                 ))}
               </select>
@@ -278,8 +308,12 @@ export default function CommandCenterPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8, paddingTop: 8, borderTop: '1px solid #222222' }}>
               <div>
-                <span style={{ color: '#888888' }}>SHIP & CONTAINER: </span>
-                <span style={{ color: '#ffffff', fontWeight: 700 }}>{selectedShipment.vessel_name} ({selectedShipment.cargo_id})</span>
+                <span style={{ color: '#888888' }}>SHIP NAME: </span>
+                <span style={{ color: '#ffffff', fontWeight: 700 }}>{selectedShipment.vessel_name}</span>
+              </div>
+              <div>
+                <span style={{ color: '#888888' }}>CONTAINER ID: </span>
+                <span style={{ color: '#ffffff', fontWeight: 700 }}>{selectedShipment.cargo_id}</span>
               </div>
               <div>
                 <span style={{ color: '#888888' }}>ORIGIN AREA: </span>
@@ -339,7 +373,7 @@ export default function CommandCenterPage() {
                     color: viewTab === 'LEGS' ? '#000000' : '#888888', border: 'none', cursor: 'pointer', fontWeight: 700
                   }}
                 >
-                  PLOTTED ROUTE AREAS & TIMESTAMPS ({activeLegs.length})
+                  PLOTTED ROUTE AREAS ({activeLegs.length})
                 </button>
                 <button
                   onClick={() => setViewTab('ALTERNATES')}

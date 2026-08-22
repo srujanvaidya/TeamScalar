@@ -1,11 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://palvwjxfasrwvstbccld.supabase.co';
-
-// Clean client key format to prevent Supabase secret key browser warnings
-const supabaseKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.startsWith('sb_secret_'))
-  ? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhbHZ3anhmYXNyd3ZzdGJjY2xkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MjAxNTAwMDAwMH0.placeholder_anon_key';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_KEY || '';
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: { persistSession: true, autoRefreshToken: true }
@@ -35,6 +31,28 @@ export type ActiveRoute = {
   cost_usd: number;
   co2_emissions_kg: number;
   updated_at: string;
+};
+
+export type ContainerEvent = {
+  id: string;
+  container_id: string;
+  ship_id: string;
+  current_location: string;
+  origin: string;
+  destination: string;
+  route: string[];
+  event_type: string;
+  timestamp: string;
+  event_hash: string;
+  polygon_tx_hash: string | null;
+  blockchain_status: string;
+  created_at: string;
+};
+
+export type Ship = {
+  id: string;
+  name: string;
+  created_at: string;
 };
 
 export type BlockchainAudit = {
