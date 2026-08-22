@@ -34,7 +34,7 @@ type Connection = {
   label: string;
 };
 
-// Horizontal 2D Node Graph Layout (Left-to-Right Flow)
+// Horizontal 2D Node Graph Layout (Left-to-Right Pipeline Flow)
 const INITIAL_N8N_NODES: N8nNode[] = [
   {
     id: 'agent_0',
@@ -301,6 +301,8 @@ const CONNECTIONS: Connection[] = [
   { fromId: 'agent_5', toId: 'agent_4', label: 'Approved' }
 ];
 
+const NODE_IDS_IN_ORDER = ['agent_0', 'agent_1a', 'agent_1b', 'agent_2', 'agent_3', 'agent_5', 'agent_4'];
+
 export default function WorkflowPage() {
   const { role } = useStore();
   const router = useRouter();
@@ -328,51 +330,66 @@ export default function WorkflowPage() {
 
   const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
 
-  // Slow 2.5-Second Per-Stage Simulation with Automatic Node Box Expansion!
+  // GUARANTEED 2.5-SECOND PER-STAGE SLOW EXECUTION ANIMATION WITH AUTO-EXPANDING BOXES
   const runLiveSimulation = async (endpoint: string) => {
+    if (executing) return;
     setExecuting(true);
 
-    // Reset all node statuses to idle
+    // Reset all nodes to idle status
     setNodes(prev => prev.map(n => ({ ...n, status: 'idle' as NodeStatus, badgeText: 'Idle' })));
+    setPanOffset({ x: 0, y: 0 });
 
+    // Non-blocking trigger to backend FastAPI route
     try {
-      const res = await fetch(`http://localhost:8000${endpoint}`);
-      const data = res.ok ? await res.json() : null;
+      fetch(`http://localhost:8000${endpoint}`).catch(() => {});
+    } catch {}
 
-      for (let i = 0; i < nodes.length; i++) {
-        const currentNodeId = nodes[i].id;
-        setActiveExecutingNodeId(currentNodeId);
+    // Loop through each node sequentially with a GUARANTEED 2.5s delay & auto-expansion
+    for (let i = 0; i < NODE_IDS_IN_ORDER.length; i++) {
+      const currentId = NODE_IDS_IN_ORDER[i];
+      const currentNode = nodes.find(n => n.id === currentId);
 
-        // Set current node to executing
-        setNodes(prev => prev.map((nd, idx) => {
-          if (idx === i) {
-            return { ...nd, status: 'executing', badgeText: 'Processing (2.5s)...' };
-          }
-          return nd;
-        }));
+      // Set active executing node ID so its card box automatically expands!
+      setActiveExecutingNodeId(currentId);
 
-        // Execute for 2.5 full seconds per stage so it looks cool & expanded!
-        await new Promise(r => setTimeout(r, 2500));
-
-        // Mark current node completed
-        setNodes(prev => prev.map((nd, idx) => {
-          if (idx === i) {
-            const isApproval = (i === 5 && data?.safeguard_evaluation?.requires_human_approval);
-            return {
-              ...nd,
-              status: isApproval ? 'approval_required' : 'completed',
-              badgeText: isApproval ? 'Approval Required' : 'Completed'
-            };
-          }
-          return nd;
-        }));
+      // Auto-pan canvas to keep active node centered horizontally
+      if (currentNode) {
+        if (currentId === 'agent_2' || currentId === 'agent_3') {
+          setPanOffset({ x: -300, y: 0 });
+        } else if (currentId === 'agent_5' || currentId === 'agent_4') {
+          setPanOffset({ x: -700, y: 0 });
+        }
       }
-    } catch (e) {
-      console.warn('Backend simulation error:', e);
+
+      setNodes(prev => prev.map(n => {
+        if (n.id === currentId) {
+          return { ...n, status: 'executing' as NodeStatus, badgeText: 'PROCESSING (2.5s)...' };
+        }
+        return n;
+      }));
+
+      // Wait exactly 2.5 seconds per stage for visual demonstration
+      await new Promise(res => setTimeout(res, 2500));
+
+      // Mark current stage completed
+      setNodes(prev => prev.map(n => {
+        if (n.id === currentId) {
+          return { ...n, status: 'completed' as NodeStatus, badgeText: 'COMPLETED' };
+        }
+        return n;
+      }));
     }
 
     setActiveExecutingNodeId(null);
     setExecuting(false);
+  };
+
+  // Reset Workflow Canvas
+  const resetWorkflow = () => {
+    setExecuting(false);
+    setActiveExecutingNodeId(null);
+    setPanOffset({ x: 0, y: 0 });
+    setNodes(prev => prev.map(n => ({ ...n, status: 'completed' as NodeStatus, badgeText: 'Completed' })));
   };
 
   // Mouse Drag & Canvas Pan Handlers
@@ -442,7 +459,7 @@ export default function WorkflowPage() {
     const toExpanded = activeExecutingNodeId === toNode.id || selectedNodeId === toNode.id;
 
     // Horizontal Output Port (Right side of fromNode)
-    const startX = fromNode.x + 270 + panOffset.x;
+    const startX = fromNode.x + 280 + panOffset.x;
     const startY = fromNode.y + (fromExpanded ? 140 : 55) + panOffset.y;
 
     // Horizontal Input Port (Left side of toNode)
@@ -506,20 +523,20 @@ export default function WorkflowPage() {
             HORIZONTAL N8N AGENT DAG WORKFLOW // LIVE AUTO-EXPANDING NODES
           </span>
           <span style={{ color: '#333333' }}>|</span>
-          <span style={{ color: '#888888', fontSize: 11 }}>LEFT-TO-RIGHT PIPELINE (2.5s DELAY PER STAGE)</span>
+          <span style={{ color: '#888888', fontSize: 11 }}>2.5s STAGE DELAYS WITH AUTO-EXPANDING BOXES</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button
             onClick={() => runLiveSimulation('/demo/full-mission-strike')}
             disabled={executing}
             style={{
-              background: '#ffffff', color: '#000000', border: 'none',
+              background: executing ? '#444444' : '#ffffff', color: '#000000', border: 'none',
               borderRadius: 4, padding: '6px 14px', fontSize: 11,
               fontWeight: 800, cursor: executing ? 'not-allowed' : 'pointer'
             }}
           >
-            {executing ? 'Executing Workflow (2.5s/stage)...' : '[Execute Strike Workflow]'}
+            {executing ? '[Executing Workflow 2.5s/stage...]' : '[Trigger Dockworkers Strike Anomaly]'}
           </button>
 
           <button
@@ -531,7 +548,7 @@ export default function WorkflowPage() {
               fontWeight: 600, cursor: executing ? 'not-allowed' : 'pointer'
             }}
           >
-            [Execute Typhoon Workflow]
+            [Inject Weather Radar & Wave Anomaly]
           </button>
 
           <button
@@ -543,7 +560,19 @@ export default function WorkflowPage() {
               fontWeight: 600, cursor: executing ? 'not-allowed' : 'pointer'
             }}
           >
-            [Execute VIP Air-Bridge Workflow]
+            [Trigger VIP Express Air-Bridge]
+          </button>
+
+          <button
+            onClick={resetWorkflow}
+            disabled={executing}
+            style={{
+              background: '#111111', border: '1px solid #333333',
+              color: '#888888', borderRadius: 4, padding: '6px 12px', fontSize: 11,
+              fontWeight: 600, cursor: executing ? 'not-allowed' : 'pointer'
+            }}
+          >
+            [Reset Pipeline]
           </button>
         </div>
       </header>
@@ -552,14 +581,14 @@ export default function WorkflowPage() {
       <div 
         onMouseDown={handleMouseDownCanvas}
         style={{
-          flex: 1, position: 'relative', overflow: 'auto', background: '#000000',
+          flex: 1, position: 'relative', overflow: 'hidden', background: '#000000',
           cursor: toolMode === 'hand' || isPanning ? 'grab' : 'default'
         }}
       >
         
         {/* Infinite Dot Grid Canvas Overlay */}
         <div style={{
-          position: 'absolute', inset: 0, minWidth: 2000, minHeight: 700,
+          position: 'absolute', inset: 0, minWidth: 2200, minHeight: 700,
           backgroundImage: 'radial-gradient(#222222 1.5px, transparent 1.5px)',
           backgroundSize: '20px 20px', pointerEvents: 'auto'
         }}>
@@ -573,7 +602,7 @@ export default function WorkflowPage() {
           {nodes.map((node) => {
             const Icon = node.icon;
             const isSelected = selectedNodeId === node.id;
-            const isExecuting = node.status === 'executing';
+            const isExecuting = activeExecutingNodeId === node.id || node.status === 'executing';
             const isCompleted = node.status === 'completed';
             const isApprovalReq = node.status === 'approval_required';
             const isAutoExpanded = isExecuting || isSelected;
@@ -586,10 +615,10 @@ export default function WorkflowPage() {
                   position: 'absolute',
                   left: node.x + panOffset.x,
                   top: node.y + panOffset.y,
-                  width: 270,
+                  width: 280,
                   background: '#050505',
                   border: isExecuting
-                    ? '1.5px solid #ffffff'
+                    ? '2px solid #ffffff'
                     : isSelected
                     ? '1.5px solid #ffffff'
                     : isApprovalReq
@@ -599,19 +628,19 @@ export default function WorkflowPage() {
                     : '1px solid #141414',
                   borderRadius: 12,
                   boxShadow: isExecuting
-                    ? '0 0 28px rgba(255, 255, 255, 0.25)'
+                    ? '0 0 32px rgba(255, 255, 255, 0.35)'
                     : isSelected
                     ? '0 0 20px rgba(255, 255, 255, 0.15)'
                     : '0 8px 32px rgba(0, 0, 0, 0.8)',
                   cursor: toolMode === 'hand' ? 'grab' : 'move',
-                  zIndex: isExecuting || isSelected ? 20 : 10,
-                  transition: draggedNodeId === node.id ? 'none' : 'all 0.3s ease',
+                  zIndex: isExecuting ? 30 : isSelected ? 20 : 10,
+                  transition: draggedNodeId === node.id ? 'none' : 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                   overflow: 'hidden'
                 }}
               >
                 {/* Node Header Handle Bar */}
                 <div style={{
-                  padding: '12px 14px', background: isExecuting ? '#111111' : '#0a0a0a',
+                  padding: '12px 14px', background: isExecuting ? '#181818' : '#0a0a0a',
                   borderBottom: '1px solid #1f1f1f',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between'
                 }}>
@@ -634,7 +663,7 @@ export default function WorkflowPage() {
 
                   {/* Status Badge */}
                   <span className={`badge ${isApprovalReq ? 'badge-critical' : isExecuting ? 'badge-info' : isCompleted ? 'badge-low' : 'badge-neutral'}`} style={{ fontSize: 8, padding: '3px 6px' }}>
-                    {node.badgeText}
+                    {isExecuting ? 'PROCESSING (2.5s)...' : node.badgeText}
                   </span>
                 </div>
 
@@ -645,11 +674,12 @@ export default function WorkflowPage() {
                   </div>
                 )}
 
-                {/* AUTOMATICALLY EXPANDED TASK DETAILS WHEN AGENT IS EXECUTING */}
+                {/* AUTOMATICALLY EXPANDED LIVE TASK DETAILS WHEN AGENT IS EXECUTING */}
                 {isAutoExpanded && (
                   <div style={{ padding: '12px 14px', background: '#000000', borderTop: '1px solid #1a1a1a', display: 'flex', flexDirection: 'column', gap: 8, fontSize: 10 }}>
-                    <div style={{ color: '#ffffff', fontWeight: 800, fontSize: 10, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                      [LIVE AGENT EXECUTION LOGS]
+                    <div style={{ color: '#ffffff', fontWeight: 800, fontSize: 10, letterSpacing: '0.05em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span>[LIVE AGENT EXECUTION LOGS]</span>
+                      {isExecuting && <span style={{ color: '#22c55e', fontSize: 9, animation: 'pulse 1s infinite' }}>[2.5s ACTIVE]</span>}
                     </div>
                     
                     <div style={{ background: '#080808', border: '1px solid #1f1f1f', padding: 8, borderRadius: 4, maxHeight: 110, overflow: 'auto', fontFamily: 'JetBrains Mono, monospace', color: '#cccccc' }}>
@@ -841,6 +871,10 @@ export default function WorkflowPage() {
       <style jsx global>{`
         @keyframes dash {
           to { stroke-dashoffset: -24; }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
         }
       `}</style>
     </div>
