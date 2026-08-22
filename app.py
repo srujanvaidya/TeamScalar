@@ -163,11 +163,12 @@ async def execute_workflow(payload_json):
     try:
         data = json.loads(payload_json)
     except Exception as e:
-        return (
+        yield (
             generate_n8n_canvas({}),
             "### Error\nInvalid JSON Payload configuration.",
             {"error": "Invalid JSON"}
         )
+        return
 
     # Initial state
     state = {n["id"]: {"status": "STANDBY", "time": "---"} for n in NODES}
