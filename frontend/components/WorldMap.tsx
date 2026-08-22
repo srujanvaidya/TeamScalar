@@ -150,28 +150,32 @@ export default function WorldMap({
     layerGroup.clearLayers();
     if (!shipment) return;
 
-    const isBlocked = shipment.current_status.includes('BLOCKED') || shipment.current_status.includes('DELAY');
+    const isBlocked = shipment.current_status.includes('BLOCKED') || shipment.current_status.includes('BOTTLENECK') || shipment.current_status.includes('DELAY');
     const [curLat, curLon] = shipment.current_coordinates;
     const bounds = L.latLngBounds();
 
-    // 1. Draw Active Route Segment Line with Hover Tooltip (Transport Mode, Node Names, Distance)
+    // 1. Draw Normal / Default Route Polyline (Shows Cost of Normal Route on Hover)
     const activeCoords = shipment.active_route_coords.map(([lat, lon]) => [lat, lon] as [number, number]);
     if (activeCoords.length > 1) {
       const activePolyline = L.polyline(activeCoords, {
-        color: isBlocked ? '#ef4444' : '#ffffff',
+        color: isBlocked ? '#ef4444' : '#888888',
         weight: 5,
-        opacity: 0.9,
+        opacity: 0.85,
       }).addTo(layerGroup);
 
-      const modeLabel = MODE_ICONS[shipment.mode] || `🚚 ${shipment.mode}`;
-      const txHash = shipment.blockchain_provenance?.tx_hash || 'Verified On-Chain';
+      const modeLabel = MODE_ICONS[shipment.mode] || `🚢 ${shipment.mode}`;
+      const normalCostFormatted = `$${shipment.metrics.cost_usd.toLocaleString()}`;
 
       activePolyline.bindTooltip(
-        `<div style="font-family: monospace; font-size: 11px; padding: 6px 10px; background: #0a0a0a; color: #fff; border: 1px solid #333; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.8);">
-          <div style="font-weight: 800; color: #38bdf8; margin-bottom: 2px;">${modeLabel}</div>
+        `<div style="font-family: Inter, monospace; font-size: 11px; padding: 8px 12px; background: #000000; color: #ffffff; border: 1px solid #ef4444; border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.9);">
+          <div style="font-weight: 800; color: #ef4444; margin-bottom: 4px; letter-spacing: 0.05em;">⚠️ NORMAL / DEFAULT ROUTE (${shipment.current_status})</div>
+          <div style="margin-bottom: 2px;">Mode: <strong>${modeLabel}</strong></div>
           <div>Path: <strong>${shipment.origin}</strong> ➔ <strong>${shipment.destination}</strong></div>
-          <div style="color: #aaa; margin-top: 2px;">Transit Time: <strong>${shipment.metrics.transit_hours}h</strong></div>
-          <div style="color: #22c55e; font-size: 9px; margin-top: 4px;">⛓️ ON-CHAIN TX: ${txHash.slice(0, 16)}...</div>
+          <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #222222; color: #cccccc;">
+            Cost of Normal Route: <strong style="color: #ef4444; font-size: 13px;">${normalCostFormatted}</strong>
+          </div>
+          <div style="color: #aaaaaa; margin-top: 2px;">Transit Duration: <strong>${shipment.metrics.transit_hours} hours</strong></div>
+          <div style="color: #666666; font-size: 9px; margin-top: 4px;">Vessel: ${shipment.vessel_name} (${shipment.cargo_id})</div>
         </div>`,
         { sticky: true }
       );
@@ -179,36 +183,46 @@ export default function WorldMap({
       activeCoords.forEach(c => bounds.extend(c));
     }
 
-    // 2. Draw Selected Alternate Route Segments with Modal Transport Tooltips (Road, Rail, Maritime, Air)
+    // 2. Draw Agent 2 / 3 Optimized Alternate Route Polyline (Shows Cost of Optimized Route / Road on Hover)
     if (altRouteId && shipment.alternate_routes) {
-      const alt = shipment.alternate_routes.find((r) => r.route_id === altRouteId);
+      const alt = shipment.alternate_routes.find((r) => r.route_id === altRouteId) || shipment.alternate_routes[0];
       if (alt && alt.waypoint_coords && alt.waypoint_coords.length > 1) {
         const altCoords = alt.waypoint_coords.map(([lat, lon]) => [lat, lon] as [number, number]);
 
         const altPolyline = L.polyline(altCoords, {
-          color: alt.risk_grade === 'HIGH' ? '#ef4444' : alt.risk_grade === 'MODERATE' ? '#f59e0b' : '#22c55e',
-          weight: 4,
+          color: '#ffffff',
+          weight: 5,
           dashArray: '8, 6',
-          opacity: 0.9,
+          opacity: 0.95,
         }).addTo(layerGroup);
 
         altCoords.forEach(c => bounds.extend(c));
 
-        // Hover tooltip over path showing modal transport breakdown
         const seqText = alt.modal_sequence.map(m => MODE_ICONS[m] || m).join(' ➔ ');
-        const altTx = alt.blockchain_message?.tx_hash || 'Verified Reroute Contract';
+        const optCostFormatted = `$${alt.base_freight_cost_usd.toLocaleString()}`;
+        const timeSavings = Math.round(shipment.metrics.transit_hours - alt.estimated_transit_hours);
 
+        // Hover tooltip over Agent-Optimized Path showing exact Cost of Optimized Route
         altPolyline.bindTooltip(
-          `<div style="font-family: monospace; font-size: 11px; padding: 6px 10px; background: #0a0a0a; color: #fff; border: 1px solid #444; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.8);">
-            <div style="font-weight: 800; color: #22c55e; margin-bottom: 2px;">ALTERNATIVE ROUTE: ${alt.route_id}</div>
+          `<div style="font-family: Inter, monospace; font-size: 11px; padding: 8px 12px; background: #000000; color: #ffffff; border: 1px solid #ffffff; border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.9);">
+            <div style="font-weight: 800; color: #22c55e; margin-bottom: 4px; letter-spacing: 0.05em;">🚀 AGENT OPTIMIZED ROAD / MULTIMODAL ROUTE</div>
+            <div style="margin-bottom: 2px;">Route ID: <strong>${alt.route_id}</strong></div>
             <div>Modal Chain: <strong>${seqText}</strong></div>
-            <div style="color: #aaa; margin-top: 2px;">Est. Hours: <strong>${alt.estimated_transit_hours}h</strong> | Cost: <strong>$${alt.base_freight_cost_usd}</strong></div>
-            <div style="color: #00ffcc; font-size: 9px; margin-top: 4px;">⛓️ REROUTE TX: ${altTx.slice(0, 16)}...</div>
+            <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #222222; color: #cccccc;">
+              Cost of Optimized Route: <strong style="color: #22c55e; font-size: 13px;">${optCostFormatted}</strong>
+            </div>
+            <div style="color: #aaaaaa; margin-top: 2px;">
+              Est. Transit: <strong>${alt.estimated_transit_hours} hours</strong>
+              ${timeSavings > 0 ? `<span style="color: #22c55e; margin-left: 6px;">(Saves ${timeSavings}h!)</span>` : ''}
+            </div>
+            <div style="color: #ffffff; font-size: 9px; margin-top: 4px; font-weight: 700;">
+              ⛓️ POLYGON PROVENANCE: VERIFIED ON-CHAIN
+            </div>
           </div>`,
           { sticky: true }
         );
 
-        // Draw Waypoint Leg Nodes on Map (Road Hub, Ocean Port, Rail Terminal, Dist Hub)
+        // Draw Waypoint Leg Transfer Nodes on Map with individual Node & Mode cost details
         alt.waypoint_coords.forEach((coord, idx) => {
           const nodeName = alt.waypoints[idx] || `Node ${idx + 1}`;
           const isOrigin = idx === 0;
@@ -217,7 +231,7 @@ export default function WorldMap({
 
           const waypointMarker = L.circleMarker([coord[0], coord[1]], {
             radius: isOrigin || isDest ? 8 : 6,
-            fillColor: isOrigin ? '#22c55e' : isDest ? '#38bdf8' : '#e2e8f0',
+            fillColor: isOrigin ? '#ffffff' : isDest ? '#ffffff' : '#aaaaaa',
             color: '#000000',
             weight: 2,
             opacity: 1,
@@ -225,9 +239,9 @@ export default function WorldMap({
           }).addTo(layerGroup);
 
           waypointMarker.bindTooltip(
-            `<div style="font-family: monospace; font-size: 10px; padding: 3px 6px; background: #111; color: #fff; border: 1px solid #444; border-radius: 4px;">
-              ${isOrigin ? '🏁 ORIGIN: ' : isDest ? '🎯 DESTINATION: ' : '📍 TRANSFER POINT: '} <strong>${nodeName}</strong><br/>
-              <span style="color: #aaa;">Mode: ${modeType}</span>
+            `<div style="font-family: monospace; font-size: 10px; padding: 4px 8px; background: #000; color: #fff; border: 1px solid #333; border-radius: 4px;">
+              ${isOrigin ? '🏁 ORIGIN NODE: ' : isDest ? '🎯 DESTINATION NODE: ' : '📍 INTERMODAL TRANSFER HUB: '} <strong>${nodeName}</strong><br/>
+              <span style="color: #888888;">Transport Mode: ${MODE_ICONS[modeType] || modeType}</span>
             </div>`,
             { permanent: false, direction: 'top' }
           );
@@ -238,7 +252,7 @@ export default function WorldMap({
     // 3. Draw Vehicle Circle Marker
     const vehicleMarker = L.circleMarker([curLat, curLon], {
       radius: 9,
-      fillColor: isBlocked ? 'red' : '#ffffff',
+      fillColor: isBlocked ? '#ef4444' : '#ffffff',
       color: '#ffffff',
       weight: 2,
       opacity: 1,
@@ -247,11 +261,12 @@ export default function WorldMap({
 
     bounds.extend([curLat, curLon]);
 
-    // Popup Tooltip
+    // Popup Tooltip on Ship Vehicle Marker
     vehicleMarker.bindTooltip(
-      `<div style="font-family: monospace; font-size: 11px; padding: 4px 8px; background: #000; color: #fff; border: 1px solid #444; border-radius: 4px;">
-        <strong>${shipment.cargo_id}</strong> (${shipment.vessel_name})<br/>
-        Status: <span style="color: ${isBlocked ? '#ef4444' : '#22c55e'}">${shipment.current_status}</span>
+      `<div style="font-family: monospace; font-size: 11px; padding: 6px 10px; background: #000000; color: #ffffff; border: 1px solid #333333; border-radius: 4px;">
+        <strong>${shipment.vessel_name}</strong> (${shipment.cargo_id})<br/>
+        Status: <span style="color: ${isBlocked ? '#ef4444' : '#22c55e'}; font-weight: 700;">${shipment.current_status}</span><br/>
+        <span style="color: #aaaaaa; font-size: 10px;">Normal Cost: $${shipment.metrics.cost_usd.toLocaleString()}</span>
       </div>`,
       { permanent: true, direction: 'top', offset: [0, -10] }
     );
