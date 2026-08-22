@@ -234,6 +234,7 @@ export default function CommandCenterPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ship_id: selectedShipment.vessel_name || 'SHIP-002',
+          container_id: selectedShipment.cargo_id || 'CONT-8001',
           location: location,
           route: waypoints
         })

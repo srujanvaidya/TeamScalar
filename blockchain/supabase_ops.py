@@ -10,7 +10,7 @@ from blockchain.config import supabase
 TABLE = "container_events"
 
 ALLOWED_COLUMNS = {
-    "ship_id", "container_id", "current_location", "origin", "destination", "route",
+    "container_id", "current_location", "origin", "destination", "route",
     "event_type", "timestamp", "event_hash", "blockchain_status", "polygon_tx_hash", "created_at"
 }
 
@@ -19,8 +19,6 @@ def insert_event(event_data: dict[str, Any]) -> dict[str, Any]:
     Insert a new container event into Supabase (filtering keys for table schema).
     """
     filtered = {k: v for k, v in event_data.items() if k in ALLOWED_COLUMNS}
-    if "ship_id" not in filtered:
-        filtered["ship_id"] = "SHIP-001"
     if "event_type" not in filtered:
         filtered["event_type"] = "CONTAINER_REROUTE_ANCHOR"
     if "timestamp" not in filtered:

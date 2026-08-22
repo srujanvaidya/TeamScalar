@@ -386,9 +386,46 @@ class BlockchainRerouteRequest(BaseModel):
     ship_id: str
     location: str
     route: List[str]
+    container_id: Optional[str] = "CONT-8001"
 
 @app.post("/api/v1/blockchain/reroute")
 async def api_blockchain_reroute(payload: BlockchainRerouteRequest):
+    import sys
+    import asyncio
+
+    script_path = os.path.join(os.path.dirname(__file__), "blockchain", "agent_reroute.py")
+    cmd = [
+        sys.executable,
+        script_path,
+        "--ship-id", payload.ship_id,
+        "--container-id", payload.container_id or "CONT-8001",
+        "--location", payload.location,
+        "--route"
+    ] + payload.route
+
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await proc.communicate()
+
+        lines = stdout.decode().strip().split("\n")
+        json_line = [l for l in lines if l.strip().startswith("{") and l.strip().endswith("}")]
+        if json_line:
+            data = json.loads(json_line[-1])
+            return {
+                "status": "SUCCESS",
+                "tx_hash": data.get("polygon_tx_hash") or data.get("event_hash"),
+                "event_hash": data.get("event_hash"),
+                "polygonscan_url": data.get("polygonscan_url"),
+                "blockchain_status": data.get("blockchain_status", "CONFIRMED"),
+                "anchored_timestamp": data.get("timestamp")
+            }
+    except Exception as e:
+        print(f"Error executing agent_reroute.py: {e}")
+
     from src.blockchain.bridge_adapter import BlockchainBridge
     receipt = await BlockchainBridge.anchor_reroute_decision(
         ship_id=payload.ship_id,
