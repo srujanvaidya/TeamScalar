@@ -29,10 +29,90 @@ const AREA_COORDS: Record<string, [number, number]> = {
   'Port of Los Angeles': [33.7426, -118.2673],
   'Panama Canal': [9.0800, -79.6800],
   'Port of New York/New Jersey': [40.6681, -74.1610],
+  'Port of Shenzhen': [22.5431, 114.0579],
+  'Port of Colombo': [6.9271, 79.8612],
+  'Cape of Good Hope': [-34.3568, 18.4740],
+  'Port of Hamburg': [53.5511, 9.9937],
+  'Port of Busan': [35.1796, 129.0756],
+  'Port of Yokohama': [35.4437, 139.6380],
+  'Port of Long Beach': [33.7701, -118.1937],
+  'Port of Ningbo': [29.8683, 121.5440],
+  'Malacca Strait': [2.5000, 101.5000],
+  'Port of Jebel Ali': [24.9857, 55.0642],
+  'Port of Antwerp': [51.2194, 4.4025],
+  'Strait of Gibraltar': [35.9562, -5.6026],
+  'Port of Genoa': [44.4056, 8.9463],
+  'Port of Hong Kong': [22.3193, 114.1694],
+  'Port of Kaohsiung': [22.6273, 120.3014],
+  'Port of Tokyo': [35.6762, 139.6503],
+  'Port of Qingdao': [36.0671, 120.3826],
+  'Port of Brisbane': [-27.4698, 153.0251],
+  'Port of Sydney': [-33.8688, 151.2093],
+  'Port of Guangzhou': [23.1291, 113.2644],
+  'Port of Manila': [14.5995, 120.9842],
+  'Port of Ho Chi Minh': [10.8231, 106.6297],
+  'Port of Tianjin': [39.3434, 117.3616],
+  'Port of Dalian': [38.9140, 121.6147],
+  'Port of Incheon': [37.4563, 126.7052],
+  'Port of Klang': [3.0000, 101.4000],
   'Port of Nhava Sheva': [18.9500, 72.9500],
   'PORT_NHAVA_SHEVA_02': [18.9500, 72.9500],
-  'Port of Dubai': [25.2048, 55.2708],
-  'PORT_DUBAI_01': [25.2048, 55.2708],
+  'Port of Felixstowe': [51.9628, 1.3511],
+  'Port of Laem Chabang': [13.0827, 100.9161],
+  'Port of Tanjung Pelepas': [1.3653, 103.5486],
+  'Port of Melbourne': [-37.8136, 144.9631],
+  'Port of Xiamen': [24.4798, 118.0894],
+  'Port of Keelung': [25.1283, 121.7419],
+  'Port of Osaka': [34.6937, 135.5023],
+  'Port of Tanjung Priok': [-6.1000, 106.8833],
+  'Port of Fremantle': [-32.0569, 115.7428],
+  'Port of Adelaide': [-34.8422, 138.5042],
+  'Port of Savannah': [32.0809, -81.0912],
+  'Port of Miami': [25.7617, -80.1918],
+  'Port of Houston': [29.7604, -95.3698],
+  'Port of Callao': [-12.0566, -77.1437],
+  'Port of Santos': [-23.9608, -46.3339],
+  'Port of Buenos Aires': [-34.6037, -58.3816],
+  'Port of Montevideo': [-34.9011, -56.1645],
+  'Port of Valencia': [39.4699, -0.3763],
+  'Port of Barcelona': [41.3851, 2.1734],
+  'Port of Marseille': [43.2965, 5.3698],
+  'Port of Algeciras': [36.1408, -5.4562],
+  'Port of Tangier': [35.7595, -5.8340],
+  'Port of Dakar': [14.7167, -17.4677],
+  'Port of Salalah': [17.0152, 54.0924],
+  'Port of Jeddah': [21.5433, 39.1728],
+  'Port Said': [31.2653, 32.3019],
+  'Port of Durban': [-29.8587, 31.0218],
+  'Port of Mombasa': [-4.0435, 39.6682],
+  'Port of Dar es Salaam': [-6.7924, 39.2083],
+  'Port of Vancouver': [49.2827, -123.1207],
+  'Port of Seattle': [47.6062, -122.3321],
+  'Port of Oakland': [37.8044, -122.2711],
+  'Port of Bremerhaven': [53.5463, 8.5831],
+  'Port of Gothenburg': [57.7089, 11.9746],
+  'Port of Aarhus': [56.1629, 10.2039],
+  'Port of Le Havre': [49.4944, 0.1079],
+  'Port of Southampton': [50.9097, -1.4044],
+  'Port of Dublin': [53.3498, -6.2603],
+  'Port of Piraeus': [37.9475, 23.6372],
+  'Port of Istanbul': [41.0082, 28.9784],
+  'Port of Constanta': [44.1792, 28.6498],
+  'Port of Mumbai': [18.9438, 72.8360],
+  'Port of Mundra': [22.8395, 69.7042],
+  'Port of Pipavav': [20.9167, 71.5000],
+  'Port of Chennai': [13.0827, 80.2707],
+  'Port of Visakhapatnam': [17.6868, 83.2185],
+  'Port of Kolkata': [22.5726, 88.3639],
+  'Port of Karachi': [24.8607, 67.0011],
+  'Port of Port Qasim': [24.7739, 67.3486],
+  'Port of Gwadar': [25.1264, 62.3225],
+  'Port of Chittagong': [22.3569, 91.7832],
+  'Port of Yangon': [16.8661, 96.1951],
+  'Port of Penang': [5.4164, 100.3327],
+  'Port of Auckland': [-36.8485, 174.7633],
+  'Port of Tauranga': [-37.6878, 176.1651],
+  'Port of Lyttelton': [-43.6031, 172.7214],
   'HUB_SHANGHAI': [31.2304, 121.4737],
   'RAIL_CHENGDU': [30.5728, 104.0668],
   'HUB_WARSAW': [52.2370, 21.0175],
@@ -68,207 +148,11 @@ export default function CommandCenterPage() {
   const [approvedRouteId, setApprovedRouteId] = useState<string | null>(null);
   const [approving, setApproving] = useState(false);
 
-  // Fetch real backend data & Supabase ships, containers & calculate Agent 2 / Agent 3 alternate routes
+  // Fetch real backend data from /api/shipments (Supabase is only used for output event logging & Polygon proofs)
   const fetchBackendShipments = async () => {
     setLoading(true);
     let allShipments: Shipment[] = [];
 
-    // Step 1: Fetch directly from Supabase container_events and ships tables
-    try {
-      const { data: ships } = await supabase.from('ships').select('*');
-      const shipNameMap: Record<string, string> = {};
-      if (ships && ships.length) {
-        ships.forEach((s: any) => {
-          shipNameMap[s.id] = s.name;
-        });
-      }
-
-      const { data: containerEvents } = await supabase.from('container_events').select('*');
-
-      if (containerEvents && containerEvents.length > 0) {
-        const parsedSupabase: Shipment[] = containerEvents.map((row: any, idx: number) => {
-          const cargoId = row.container_id || `CONT-SUPABASE-${idx + 1}`;
-          const shipName = shipNameMap[row.ship_id] || row.ship_id || 'SUPABASE VESSEL';
-          const origin = row.origin || 'Port of Los Angeles';
-          const destination = row.destination || 'Port of New York/New Jersey';
-
-          let rawDbRoute: string[] = [];
-          if (Array.isArray(row.route)) {
-            rawDbRoute = row.route;
-          } else if (typeof row.route === 'string') {
-            try { rawDbRoute = JSON.parse(row.route); } catch { rawDbRoute = [origin, destination]; }
-          } else {
-            rawDbRoute = [origin, destination];
-          }
-
-          const activeCoords: [number, number][] = rawDbRoute.map(area => resolveAreaCoords(area));
-
-          const dbLegBreakdown: RouteLeg[] = [];
-          for (let i = 0; i < rawDbRoute.length - 1; i++) {
-            dbLegBreakdown.push({
-              leg_id: `DB-LEG-0${i + 1}`,
-              from_node: rawDbRoute[i],
-              from_type: 'OCEAN_PORT',
-              to_node: rawDbRoute[i + 1],
-              to_type: 'OCEAN_PORT',
-              mode: 'MARITIME',
-              distance_km: 4500.0 * (i + 1),
-              transit_hours: 72.0 * (i + 1),
-              departure_time: row.timestamp || new Date().toISOString(),
-              arrival_time: new Date(Date.now() + (i + 1) * 86400000).toISOString(),
-              tx_hash: row.polygon_tx_hash || row.event_hash || '0x' + Math.random().toString(16).slice(2)
-            });
-          }
-
-          // --- AGENT 2 DYNAMIC MULTI-MODAL OPTIMIZED ALTERNATES ---
-          const isUSRoute = origin.includes('Los Angeles') || destination.includes('New York');
-
-          const alt1Waypoints = isUSRoute
-            ? [origin, 'HUB_CHICAGO_01', destination]
-            : [origin, 'RAIL_CHENGDU', 'HUB_WARSAW', destination];
-          
-          const alt1Coords = alt1Waypoints.map(w => resolveAreaCoords(w));
-
-          const alt1Legs: RouteLeg[] = [
-            {
-              leg_id: 'AGENT2-OPT-1',
-              from_node: alt1Waypoints[0],
-              from_type: 'ORIGIN_HUB',
-              to_node: alt1Waypoints[1],
-              to_type: 'RAIL_TERMINAL',
-              mode: 'ROAD_TRUCK',
-              distance_km: 1200.0,
-              transit_hours: 18.0,
-              departure_time: new Date().toISOString(),
-              arrival_time: new Date(Date.now() + 18 * 3600000).toISOString(),
-              tx_hash: '0x' + Math.random().toString(16).slice(2)
-            },
-            {
-              leg_id: 'AGENT2-OPT-2',
-              from_node: alt1Waypoints[1],
-              from_type: 'RAIL_TERMINAL',
-              to_node: alt1Waypoints[alt1Waypoints.length - 1],
-              to_type: 'DESTINATION_HUB',
-              mode: 'RAIL_FREIGHT',
-              distance_km: 2400.0,
-              transit_hours: 30.0,
-              departure_time: new Date(Date.now() + 20 * 3600000).toISOString(),
-              arrival_time: new Date(Date.now() + 50 * 3600000).toISOString(),
-              tx_hash: '0x' + Math.random().toString(16).slice(2)
-            }
-          ];
-
-          const alt2Waypoints = isUSRoute
-            ? [origin, 'AIR_ATLANTA_01', destination]
-            : [origin, 'AIR_DUBAI', 'HUB_FRANKFURT_01', destination];
-
-          const alt2Coords = alt2Waypoints.map(w => resolveAreaCoords(w));
-
-          const alt2Legs: RouteLeg[] = [
-            {
-              leg_id: 'AGENT2-AIR-1',
-              from_node: alt2Waypoints[0],
-              from_type: 'ORIGIN_HUB',
-              to_node: alt2Waypoints[1],
-              to_type: 'AIRPORT_CARGO',
-              mode: 'AIR_FREIGHT',
-              distance_km: 1800.0,
-              transit_hours: 6.0,
-              departure_time: new Date().toISOString(),
-              arrival_time: new Date(Date.now() + 6 * 3600000).toISOString(),
-              tx_hash: '0x' + Math.random().toString(16).slice(2)
-            },
-            {
-              leg_id: 'AGENT2-AIR-2',
-              from_node: alt2Waypoints[1],
-              from_type: 'AIRPORT_CARGO',
-              to_node: alt2Waypoints[2],
-              to_type: 'DESTINATION_HUB',
-              mode: 'ROAD_TRUCK',
-              distance_km: 600.0,
-              transit_hours: 8.5,
-              departure_time: new Date(Date.now() + 7 * 3600000).toISOString(),
-              arrival_time: new Date(Date.now() + 15 * 3600000).toISOString(),
-              tx_hash: '0x' + Math.random().toString(16).slice(2)
-            }
-          ];
-
-          return {
-            cargo_id: cargoId,
-            mode: 'MARITIME',
-            vessel_name: `${shipName} (${row.ship_id || 'SHIP'})`,
-            origin: origin,
-            destination: destination,
-            current_status: 'BOTTLENECK_PANAMA_CANAL',
-            current_coordinates: activeCoords[0] || [33.7426, -118.2673],
-            active_route_coords: activeCoords,
-            metrics: {
-              transit_hours: 168.0,
-              cost_usd: 24500.0,
-              co2_kg: 3200.0,
-              sla_risk: 'HIGH'
-            },
-            blockchain_provenance: {
-              tx_hash: row.polygon_tx_hash || row.event_hash,
-              block_number: 4829200 + idx,
-              contract_address: '0xbe6E842E5CCD8752EF538B7874530F3bE702e8Ae',
-              origin_point: `${origin} [${activeCoords[0]?.[0]}, ${activeCoords[0]?.[1]}]`,
-              destination_point: `${destination} [${activeCoords[activeCoords.length - 1]?.[0]}, ${activeCoords[activeCoords.length - 1]?.[1]}]`,
-              verified_on_chain: row.blockchain_status === 'CONFIRMED',
-              timestamp: row.timestamp || row.created_at
-            },
-            route_legs: dbLegBreakdown,
-            alternate_routes: [
-              {
-                route_id: `ROUTE_AGENT2_INTERMODAL_${cargoId}`,
-                modal_sequence: ['ROAD_TRUCK', 'RAIL_FREIGHT'],
-                waypoints: alt1Waypoints,
-                waypoint_coords: alt1Coords,
-                estimated_transit_hours: 48.0,
-                base_freight_cost_usd: 11500.0,
-                co2_emissions_kg: 950.0,
-                risk_grade: 'LOW',
-                color_gradient: [56, 142, 60],
-                blockchain_message: {
-                  action: 'AGENT_2_INTERMODAL_RAIL_OPTIMIZATION',
-                  start_node: `${origin} (Port)`,
-                  end_node: `${destination} (Port)`,
-                  leg_summary: 'AGENT 2 DIJKSTRA BYPASS (Saves 120h)',
-                  tx_hash: row.polygon_tx_hash || '0x' + Math.random().toString(16).slice(2),
-                  verified_on_chain: true
-                },
-                leg_breakdown: alt1Legs
-              },
-              {
-                route_id: `ROUTE_AGENT2_EXPRESS_AIR_${cargoId}`,
-                modal_sequence: ['AIR_FREIGHT', 'ROAD_TRUCK'],
-                waypoints: alt2Waypoints,
-                waypoint_coords: alt2Coords,
-                estimated_transit_hours: 14.5,
-                base_freight_cost_usd: 28400.0,
-                co2_emissions_kg: 2100.0,
-                risk_grade: 'LOW',
-                color_gradient: [30, 144, 255],
-                blockchain_message: {
-                  action: 'EXPRESS_AIR_CARGO_BYPASS',
-                  start_node: `${origin} (Port)`,
-                  end_node: `${destination} (Port)`,
-                  leg_summary: 'EXPRESS AIR CARGO (Saves 153.5h)',
-                  tx_hash: '0x' + Math.random().toString(16).slice(2),
-                  verified_on_chain: true
-                },
-                leg_breakdown: alt2Legs
-              }
-            ]
-          };
-        });
-        allShipments = [...parsedSupabase];
-      }
-    } catch (e) {
-      console.warn('Supabase client fetch warning:', e);
-    }
-
-    // Step 2: Fetch from Next.js API / FastAPI backend
     try {
       let res = await fetch('/api/shipments');
       if (!res.ok) {
@@ -278,26 +162,24 @@ export default function CommandCenterPage() {
       if (res.ok) {
         const json = await res.json();
         if (json.shipments && json.shipments.length) {
-          allShipments = [...allShipments, ...json.shipments];
+          allShipments = json.shipments;
         }
       }
     } catch (err) {
-      console.warn('Backend fetch warning, retrying...', err);
+      console.warn('Backend fetch warning:', err);
     }
 
-    // Deduplicate by cargo_id
     if (allShipments.length) {
-      const uniqueShipments = Array.from(new Map(allShipments.map(s => [s.cargo_id, s])).values());
-      setShipments(uniqueShipments);
+      setShipments(allShipments);
 
-      if (!selectedCargoId || !uniqueShipments.some(s => s.cargo_id === selectedCargoId)) {
-        const initial = uniqueShipments[0];
+      if (!selectedCargoId || !allShipments.some(s => s.cargo_id === selectedCargoId)) {
+        const initial = allShipments[0];
         setSelectedCargoId(initial.cargo_id);
         if (initial.alternate_routes?.length) {
           setActiveAltRouteId(initial.alternate_routes[0].route_id);
         }
       } else {
-        const current = uniqueShipments.find(s => s.cargo_id === selectedCargoId);
+        const current = allShipments.find(s => s.cargo_id === selectedCargoId);
         if (current && current.alternate_routes?.length) {
           setActiveAltRouteId(current.alternate_routes[0].route_id);
         }
@@ -347,7 +229,6 @@ export default function CommandCenterPage() {
     const location = waypoints[0] || selectedShipment.origin;
 
     try {
-      // Call FastAPI backend endpoint which triggers blockchain/under_reroute.py via subprocess
       const res = await fetch('http://localhost:8000/api/v1/blockchain/reroute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -426,7 +307,7 @@ export default function CommandCenterPage() {
             >
               {shipments.map(s => (
                 <option key={s.cargo_id} value={s.cargo_id}>
-                  {s.vessel_name} (Container: {s.cargo_id})
+                  {s.vessel_name} ({s.cargo_id}: {s.origin} ➔ {s.destination})
                 </option>
               ))}
             </select>

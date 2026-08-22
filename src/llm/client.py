@@ -216,7 +216,4 @@ class MockLLMClient(BaseLLMClient):
             return schema.model_validate({})
 
 def get_llm_client() -> BaseLLMClient:
-    provider = os.getenv("LLM_PROVIDER", "mock").lower()
-    if provider == "huggingface":
-        return HuggingFaceClient()
     return MockLLMClient()

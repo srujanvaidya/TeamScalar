@@ -341,29 +341,45 @@ export default function WorldMap({
       });
     }
 
-    // 4. Draw Completed Past Trajectory (Solid Line from Origin ➔ Current Position)
+    // 4. Render Origin Port Marker (Green Ring Dot) & Destination Port Marker (Cyan Ring Dot)
     const activeCoords = shipment.active_route_coords.map(([lat, lon]) => [lat, lon] as [number, number]);
     if (activeCoords.length > 0) {
-      const pastPath = [activeCoords[0], [curLat, curLon] as [number, number]];
-      const pastPolyline = L.polyline(pastPath, {
-        color: '#22c55e',
-        weight: 5,
-        opacity: 0.9,
-      }).addTo(layerGroup);
+      const originCoord = activeCoords[0];
+      const destCoord = activeCoords[activeCoords.length - 1];
 
-      pastPolyline.bindPopup(
-        `<div style="font-family: Inter, monospace; font-size: 11px; padding: 8px 12px; background: #000000; color: #ffffff; border: 1px solid #22c55e; border-radius: 6px;">
-          <div style="font-weight: 800; color: #22c55e; margin-bottom: 2px;">[COMPLETED PAST TRANSIT TRACK]</div>
-          <div>Origin: <strong>${shipment.origin}</strong> ➔ Current Telemetry Position</div>
-          <div style="color: #888888; font-size: 10px; margin-top: 2px;">Status: VERIFIED ON-CHAIN</div>
+      // Origin Marker
+      L.circleMarker(originCoord, {
+        radius: 7,
+        fillColor: '#22c55e',
+        color: '#ffffff',
+        weight: 2,
+        fillOpacity: 1
+      }).addTo(layerGroup).bindPopup(
+        `<div style="font-family: Inter, monospace; font-size: 11px; padding: 6px 10px; background: #000000; color: #22c55e; border: 1px solid #22c55e; border-radius: 4px;">
+          [ORIGIN PORT]: <strong>${shipment.origin}</strong>
         </div>`
       );
+
+      // Destination Marker
+      L.circleMarker(destCoord, {
+        radius: 9,
+        fillColor: '#38bdf8',
+        color: '#ffffff',
+        weight: 2,
+        fillOpacity: 1
+      }).addTo(layerGroup).bindPopup(
+        `<div style="font-family: Inter, monospace; font-size: 11px; padding: 6px 10px; background: #000000; color: #38bdf8; border: 1px solid #38bdf8; border-radius: 4px;">
+          [DESTINATION PORT]: <strong>${shipment.destination}</strong>
+        </div>`
+      );
+
+      bounds.extend(originCoord);
+      bounds.extend(destCoord);
     }
 
-    // 5. Draw Future Remaining Default Route (Dotted Dashed Line from Current Position ➔ Destination)
-    if (activeCoords.length > 1) {
-      const futurePath = [[curLat, curLon] as [number, number], ...activeCoords.slice(1)];
-      const futurePolyline = L.polyline(futurePath, {
+    // 5. Draw Future Remaining Default Route (ONLY if no alternate bypass is selected)
+    if (!altRouteId && activeCoords.length > 1) {
+      const futurePolyline = L.polyline(activeCoords, {
         color: isBlocked ? '#ef4444' : '#888888',
         weight: 4,
         dashArray: '6, 8',
@@ -375,26 +391,24 @@ export default function WorldMap({
 
       futurePolyline.bindPopup(
         `<div style="font-family: Inter, monospace; font-size: 11px; padding: 10px 14px; background: #000000; color: #ffffff; border: 1px solid #ef4444; border-radius: 6px;">
-          <div style="font-weight: 800; color: #ef4444; margin-bottom: 4px;">[FUTURE REMAINING DEFAULT PATH - BOTTLENECK AFFECTED]</div>
+          <div style="font-weight: 800; color: #ef4444; margin-bottom: 4px;">[DEFAULT ROUTE - BOTTLENECK AFFECTED]</div>
           <div>Mode: <strong>${modeLabel}</strong> (${MODE_RATES[shipment.mode] || '$0.65 / km'})</div>
-          <div>Path: Current Position ➔ <strong>${shipment.destination}</strong></div>
+          <div>Path: <strong>${shipment.origin}</strong> ➔ <strong>${shipment.destination}</strong></div>
           <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #222222; color: #cccccc;">
             Cost of Normal Route: <strong style="color: #ef4444; font-size: 13px;">${normalCostFormatted}</strong>
           </div>
         </div>`
       );
-
-      activeCoords.forEach(c => bounds.extend(c));
     }
 
-    // 6. Draw Agent 2 / 3 Agent-Optimized Alternate Bypass Polylines (Branching from Current Position)
+    // 6. Draw Agent-Optimized Alternate Bypass Polyline (When an alternate route is selected)
     if (altRouteId && shipment.alternate_routes) {
       const alt = shipment.alternate_routes.find((r) => r.route_id === altRouteId) || shipment.alternate_routes[0];
       if (alt && alt.waypoint_coords && alt.waypoint_coords.length > 1) {
-        const altCoords = [[curLat, curLon] as [number, number], ...alt.waypoint_coords.map(([lat, lon]) => [lat, lon] as [number, number])];
+        const altCoords = alt.waypoint_coords.map(([lat, lon]) => [lat, lon] as [number, number]);
 
         const altPolyline = L.polyline(altCoords, {
-          color: '#ffffff',
+          color: '#22c55e',
           weight: 5,
           dashArray: '8, 6',
           opacity: 0.95,
@@ -407,7 +421,7 @@ export default function WorldMap({
         const timeSavings = Math.round(shipment.metrics.transit_hours - alt.estimated_transit_hours);
 
         altPolyline.bindPopup(
-          `<div style="font-family: Inter, monospace; font-size: 11px; padding: 10px 14px; background: #000000; color: #ffffff; border: 1px solid #ffffff; border-radius: 6px;">
+          `<div style="font-family: Inter, monospace; font-size: 11px; padding: 10px 14px; background: #000000; color: #ffffff; border: 1px solid #22c55e; border-radius: 6px;">
             <div style="font-weight: 800; color: #22c55e; margin-bottom: 4px;">[AGENT OPTIMIZED ROAD / MULTIMODAL ROUTE]</div>
             <div>Route ID: <strong>${alt.route_id}</strong></div>
             <div>Modal Chain: <strong>${seqText}</strong></div>
