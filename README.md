@@ -1,7 +1,7 @@
 ---
 title: TeamScalar Supply Chain Disruption Control Agent
 emoji: ⚡
-colorFrom: black
+colorFrom: gray
 colorTo: gray
 sdk: gradio
 sdk_version: 4.44.0
