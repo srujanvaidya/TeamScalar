@@ -34,6 +34,7 @@ type Connection = {
   label: string;
 };
 
+// Horizontal 2D Node Graph Layout (Left-to-Right Flow)
 const INITIAL_N8N_NODES: N8nNode[] = [
   {
     id: 'agent_0',
@@ -42,8 +43,8 @@ const INITIAL_N8N_NODES: N8nNode[] = [
     subtitle: 'Initializing Mission Context & Data',
     icon: Cpu,
     status: 'completed',
-    x: 450,
-    y: 40,
+    x: 60,
+    y: 220,
     badgeText: 'Completed',
     stats: { inputs: 1, processed: 1, outputs: 2, latencyMs: 12 },
     inputPayload: {
@@ -81,8 +82,8 @@ const INITIAL_N8N_NODES: N8nNode[] = [
     subtitle: 'Parsing RSS Labor Strike Data',
     icon: Database,
     status: 'completed',
-    x: 180,
-    y: 200,
+    x: 380,
+    y: 90,
     badgeText: 'Completed',
     stats: { inputs: 1, processed: 14, outputs: 1, latencyMs: 85 },
     inputPayload: {
@@ -108,12 +109,12 @@ const INITIAL_N8N_NODES: N8nNode[] = [
   {
     id: 'agent_1b',
     stageLabel: 'STAGE 02B',
-    title: 'Agent 1B: Environmental Telemetry',
+    title: 'Agent 1B: Weather Telemetry',
     subtitle: 'Ingesting AIS & Storm Radar',
     icon: Activity,
     status: 'completed',
-    x: 720,
-    y: 200,
+    x: 380,
+    y: 360,
     badgeText: 'Completed',
     stats: { inputs: 1, processed: 88, outputs: 1, latencyMs: 64 },
     inputPayload: {
@@ -143,8 +144,8 @@ const INITIAL_N8N_NODES: N8nNode[] = [
     subtitle: 'Calculating NetworkX Dijkstra Bypass',
     icon: Layers,
     status: 'completed',
-    x: 450,
-    y: 380,
+    x: 700,
+    y: 220,
     badgeText: 'Completed',
     stats: { inputs: 2, processed: 16, outputs: 2, latencyMs: 142 },
     inputPayload: {
@@ -186,12 +187,12 @@ const INITIAL_N8N_NODES: N8nNode[] = [
   {
     id: 'agent_3',
     stageLabel: 'STAGE 04',
-    title: 'Agent 3: Route Policy & SLA Validator',
+    title: 'Agent 3: Policy & SLA Validator',
     subtitle: 'Ensuring Data & Inventory Accuracy',
     icon: ShieldCheck,
     status: 'completed',
-    x: 450,
-    y: 560,
+    x: 1020,
+    y: 220,
     badgeText: 'Completed',
     stats: { inputs: 2, processed: 20, outputs: 1, latencyMs: 98 },
     inputPayload: {
@@ -223,12 +224,12 @@ const INITIAL_N8N_NODES: N8nNode[] = [
   {
     id: 'agent_5',
     stageLabel: 'STAGE 05',
-    title: 'Agent 5: Financial Safeguard Gate',
-    subtitle: 'Performing Financial Threshold Evaluation',
+    title: 'Agent 5: Safeguard Gate',
+    subtitle: 'Evaluating $50,000 Cost Ceiling',
     icon: Cpu,
     status: 'completed',
-    x: 450,
-    y: 740,
+    x: 1340,
+    y: 220,
     badgeText: 'Completed',
     stats: { inputs: 1, processed: 12, outputs: 1, latencyMs: 45 },
     inputPayload: {
@@ -258,12 +259,12 @@ const INITIAL_N8N_NODES: N8nNode[] = [
   {
     id: 'agent_4',
     stageLabel: 'STAGE 06',
-    title: 'Agent 4: Polygon Settlement Anchor',
-    subtitle: 'Automation & On-Chain Audit Complete',
+    title: 'Agent 4: Polygon Settlement',
+    subtitle: 'On-Chain Audit Anchor Complete',
     icon: Lock,
     status: 'completed',
-    x: 450,
-    y: 920,
+    x: 1660,
+    y: 220,
     badgeText: 'Completed',
     stats: { inputs: 1, processed: 55, outputs: 1, latencyMs: 310 },
     inputPayload: {
@@ -291,13 +292,13 @@ const INITIAL_N8N_NODES: N8nNode[] = [
 ];
 
 const CONNECTIONS: Connection[] = [
-  { fromId: 'agent_0', toId: 'agent_1a', label: 'Initialize News Ingestion' },
-  { fromId: 'agent_0', toId: 'agent_1b', label: 'Setup Telemetry Ingestion' },
-  { fromId: 'agent_1a', toId: 'agent_2', label: 'Threat Vectors' },
-  { fromId: 'agent_1b', toId: 'agent_2', label: 'Weather Radar' },
-  { fromId: 'agent_2', toId: 'agent_3', label: 'Candidate Routes' },
-  { fromId: 'agent_3', toId: 'agent_5', label: 'Validated Policy' },
-  { fromId: 'agent_5', toId: 'agent_4', label: 'Approved Settlement' }
+  { fromId: 'agent_0', toId: 'agent_1a', label: 'News Feed' },
+  { fromId: 'agent_0', toId: 'agent_1b', label: 'Telemetry' },
+  { fromId: 'agent_1a', toId: 'agent_2', label: 'Threats' },
+  { fromId: 'agent_1b', toId: 'agent_2', label: 'Weather' },
+  { fromId: 'agent_2', toId: 'agent_3', label: 'Candidates' },
+  { fromId: 'agent_3', toId: 'agent_5', label: 'Policy' },
+  { fromId: 'agent_5', toId: 'agent_4', label: 'Approved' }
 ];
 
 export default function WorkflowPage() {
@@ -314,8 +315,9 @@ export default function WorkflowPage() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [activeDrawerTab, setActiveDrawerTab] = useState<'SUMMARY' | 'INPUT' | 'REASONING' | 'TOOLS' | 'OUTPUT' | 'JSON'>('SUMMARY');
   const [executing, setExecuting] = useState(false);
+  const [activeExecutingNodeId, setActiveExecutingNodeId] = useState<string | null>(null);
 
-  // Mouse Dragging & Panning Tool Mode
+  // Mouse Dragging & Canvas Panning State
   const [toolMode, setToolMode] = useState<'select' | 'hand'>('select');
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
@@ -326,7 +328,7 @@ export default function WorkflowPage() {
 
   const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
 
-  // Slow Step-by-Step Simulation (Takes 2 Seconds per Stage for Demo Visibility)
+  // Slow 2.5-Second Per-Stage Simulation with Automatic Node Box Expansion!
   const runLiveSimulation = async (endpoint: string) => {
     setExecuting(true);
 
@@ -338,16 +340,19 @@ export default function WorkflowPage() {
       const data = res.ok ? await res.json() : null;
 
       for (let i = 0; i < nodes.length; i++) {
+        const currentNodeId = nodes[i].id;
+        setActiveExecutingNodeId(currentNodeId);
+
         // Set current node to executing
         setNodes(prev => prev.map((nd, idx) => {
           if (idx === i) {
-            return { ...nd, status: 'executing', badgeText: 'Processing (2.0s)...' };
+            return { ...nd, status: 'executing', badgeText: 'Processing (2.5s)...' };
           }
           return nd;
         }));
 
-        // Wait 2.0 full seconds per stage so judges can observe inter-agent handoff!
-        await new Promise(r => setTimeout(r, 2000));
+        // Execute for 2.5 full seconds per stage so it looks cool & expanded!
+        await new Promise(r => setTimeout(r, 2500));
 
         // Mark current node completed
         setNodes(prev => prev.map((nd, idx) => {
@@ -366,10 +371,11 @@ export default function WorkflowPage() {
       console.warn('Backend simulation error:', e);
     }
 
+    setActiveExecutingNodeId(null);
     setExecuting(false);
   };
 
-  // Mouse Drag & Canvas Pan Event Handlers
+  // Mouse Drag & Canvas Pan Handlers
   const handleMouseDownNode = (e: React.MouseEvent, nodeId: string) => {
     if (toolMode === 'hand') return;
     e.stopPropagation();
@@ -426,22 +432,27 @@ export default function WorkflowPage() {
     setIsPanning(false);
   };
 
-  // Helper to generate cubic bezier curve path between node coordinates
-  const renderBezierCurve = (conn: Connection) => {
+  // Helper to render horizontal left-to-right cubic bezier curves
+  const renderHorizontalBezierCurve = (conn: Connection) => {
     const fromNode = nodes.find(n => n.id === conn.fromId);
     const toNode = nodes.find(n => n.id === conn.toId);
     if (!fromNode || !toNode) return null;
 
-    // Node dimensions: width ~ 300px, height ~ 110px
-    const startX = fromNode.x + 150 + panOffset.x;
-    const startY = fromNode.y + 110 + panOffset.y;
-    const endX = toNode.x + 150 + panOffset.x;
-    const endY = toNode.y + panOffset.y;
+    const fromExpanded = activeExecutingNodeId === fromNode.id || selectedNodeId === fromNode.id;
+    const toExpanded = activeExecutingNodeId === toNode.id || selectedNodeId === toNode.id;
 
-    const controlY1 = startY + Math.abs(endY - startY) * 0.45;
-    const controlY2 = endY - Math.abs(endY - startY) * 0.45;
+    // Horizontal Output Port (Right side of fromNode)
+    const startX = fromNode.x + 270 + panOffset.x;
+    const startY = fromNode.y + (fromExpanded ? 140 : 55) + panOffset.y;
 
-    const d = `M ${startX} ${startY} C ${startX} ${controlY1}, ${endX} ${controlY2}, ${endX} ${endY}`;
+    // Horizontal Input Port (Left side of toNode)
+    const endX = toNode.x + panOffset.x;
+    const endY = toNode.y + (toExpanded ? 140 : 55) + panOffset.y;
+
+    const controlX1 = startX + Math.abs(endX - startX) * 0.5;
+    const controlX2 = endX - Math.abs(endX - startX) * 0.5;
+
+    const d = `M ${startX} ${startY} C ${controlX1} ${startY}, ${controlX2} ${endY}, ${endX} ${endY}`;
     const midX = (startX + endX) / 2;
     const midY = (startY + endY) / 2;
 
@@ -463,7 +474,7 @@ export default function WorkflowPage() {
         />
 
         {/* Connection Label Pill */}
-        <foreignObject x={midX - 60} y={midY - 12} width="120" height="24">
+        <foreignObject x={midX - 45} y={midY - 12} width="90" height="24">
           <div style={{
             background: '#000000', border: isExecuting ? '1px solid #ffffff' : '1px solid #262626',
             color: isExecuting ? '#ffffff' : '#888888', borderRadius: 12,
@@ -492,10 +503,10 @@ export default function WorkflowPage() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <span style={{ fontWeight: 800, color: '#ffffff', letterSpacing: '0.06em', fontSize: 13 }}>
-            N8N WORKFLOW INSPECTOR // AGENT DAG CANVAS
+            HORIZONTAL N8N AGENT DAG WORKFLOW // LIVE AUTO-EXPANDING NODES
           </span>
           <span style={{ color: '#333333' }}>|</span>
-          <span style={{ color: '#888888', fontSize: 11 }}>DRAGGABLE NODES & SLOW STEP-BY-STEP WORKFLOW (2s PER STAGE)</span>
+          <span style={{ color: '#888888', fontSize: 11 }}>LEFT-TO-RIGHT PIPELINE (2.5s DELAY PER STAGE)</span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -508,7 +519,7 @@ export default function WorkflowPage() {
               fontWeight: 800, cursor: executing ? 'not-allowed' : 'pointer'
             }}
           >
-            {executing ? 'Executing Workflow (2s/stage)...' : '[Execute Strike Workflow]'}
+            {executing ? 'Executing Workflow (2.5s/stage)...' : '[Execute Strike Workflow]'}
           </button>
 
           <button
@@ -537,34 +548,35 @@ export default function WorkflowPage() {
         </div>
       </header>
 
-      {/* Main Canvas Container with Interactive Mouse Drag & Dot Grid */}
+      {/* Main Horizontal Canvas Area */}
       <div 
         onMouseDown={handleMouseDownCanvas}
         style={{
-          flex: 1, position: 'relative', overflow: 'hidden', background: '#000000',
+          flex: 1, position: 'relative', overflow: 'auto', background: '#000000',
           cursor: toolMode === 'hand' || isPanning ? 'grab' : 'default'
         }}
       >
         
         {/* Infinite Dot Grid Canvas Overlay */}
         <div style={{
-          position: 'absolute', inset: 0, minWidth: 1400, minHeight: 1200,
+          position: 'absolute', inset: 0, minWidth: 2000, minHeight: 700,
           backgroundImage: 'radial-gradient(#222222 1.5px, transparent 1.5px)',
           backgroundSize: '20px 20px', pointerEvents: 'auto'
         }}>
 
-          {/* SVG Connections Layer */}
+          {/* Horizontal SVG Connections Layer */}
           <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }}>
-            {CONNECTIONS.map(conn => renderBezierCurve(conn))}
+            {CONNECTIONS.map(conn => renderHorizontalBezierCurve(conn))}
           </svg>
 
-          {/* Render Interactive Draggable 2D Spatial n8n Nodes */}
+          {/* Render Horizontal 2D Spatial n8n Nodes */}
           {nodes.map((node) => {
             const Icon = node.icon;
             const isSelected = selectedNodeId === node.id;
             const isExecuting = node.status === 'executing';
             const isCompleted = node.status === 'completed';
             const isApprovalReq = node.status === 'approval_required';
+            const isAutoExpanded = isExecuting || isSelected;
 
             return (
               <div
@@ -574,11 +586,11 @@ export default function WorkflowPage() {
                   position: 'absolute',
                   left: node.x + panOffset.x,
                   top: node.y + panOffset.y,
-                  width: 300,
+                  width: 270,
                   background: '#050505',
-                  border: isSelected
+                  border: isExecuting
                     ? '1.5px solid #ffffff'
-                    : isExecuting
+                    : isSelected
                     ? '1.5px solid #ffffff'
                     : isApprovalReq
                     ? '1.5px solid #ef4444'
@@ -586,20 +598,21 @@ export default function WorkflowPage() {
                     ? '1px solid #262626'
                     : '1px solid #141414',
                   borderRadius: 12,
-                  boxShadow: isSelected
-                    ? '0 0 24px rgba(255, 255, 255, 0.2)'
-                    : isExecuting
+                  boxShadow: isExecuting
+                    ? '0 0 28px rgba(255, 255, 255, 0.25)'
+                    : isSelected
                     ? '0 0 20px rgba(255, 255, 255, 0.15)'
                     : '0 8px 32px rgba(0, 0, 0, 0.8)',
                   cursor: toolMode === 'hand' ? 'grab' : 'move',
-                  zIndex: 10,
-                  transition: draggedNodeId === node.id ? 'none' : 'all 0.2s ease',
+                  zIndex: isExecuting || isSelected ? 20 : 10,
+                  transition: draggedNodeId === node.id ? 'none' : 'all 0.3s ease',
                   overflow: 'hidden'
                 }}
               >
-                {/* Node Top Handle Header Bar */}
+                {/* Node Header Handle Bar */}
                 <div style={{
-                  padding: '12px 14px', background: '#0a0a0a', borderBottom: '1px solid #1f1f1f',
+                  padding: '12px 14px', background: isExecuting ? '#111111' : '#0a0a0a',
+                  borderBottom: '1px solid #1f1f1f',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -613,30 +626,51 @@ export default function WorkflowPage() {
                       <div style={{ fontSize: 9, fontWeight: 700, color: '#888888', letterSpacing: '0.05em' }}>
                         {node.stageLabel}
                       </div>
-                      <div style={{ fontSize: 12, fontWeight: 800, color: '#ffffff' }}>
+                      <div style={{ fontSize: 11, fontWeight: 800, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>
                         {node.title.split(':')[1] || node.title}
                       </div>
                     </div>
                   </div>
 
-                  {/* Status Pill Badge */}
-                  <span className={`badge ${isApprovalReq ? 'badge-critical' : isExecuting ? 'badge-info' : isCompleted ? 'badge-low' : 'badge-neutral'}`} style={{ fontSize: 9 }}>
+                  {/* Status Badge */}
+                  <span className={`badge ${isApprovalReq ? 'badge-critical' : isExecuting ? 'badge-info' : isCompleted ? 'badge-low' : 'badge-neutral'}`} style={{ fontSize: 8, padding: '3px 6px' }}>
                     {node.badgeText}
                   </span>
                 </div>
 
-                {/* Node Subtitle & Description */}
-                <div style={{ padding: '10px 14px', fontSize: 11, color: '#aaaaaa', lineHeight: 1.4 }}>
-                  {node.subtitle}
-                </div>
+                {/* Collapsed Node Description */}
+                {!isAutoExpanded && (
+                  <div style={{ padding: '10px 14px', fontSize: 10, color: '#aaaaaa', lineHeight: 1.4 }}>
+                    {node.subtitle}
+                  </div>
+                )}
 
-                {/* Node Bottom Metrics Stats Bar (n8n signature style) */}
+                {/* AUTOMATICALLY EXPANDED TASK DETAILS WHEN AGENT IS EXECUTING */}
+                {isAutoExpanded && (
+                  <div style={{ padding: '12px 14px', background: '#000000', borderTop: '1px solid #1a1a1a', display: 'flex', flexDirection: 'column', gap: 8, fontSize: 10 }}>
+                    <div style={{ color: '#ffffff', fontWeight: 800, fontSize: 10, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                      [LIVE AGENT EXECUTION LOGS]
+                    </div>
+                    
+                    <div style={{ background: '#080808', border: '1px solid #1f1f1f', padding: 8, borderRadius: 4, maxHeight: 110, overflow: 'auto', fontFamily: 'JetBrains Mono, monospace', color: '#cccccc' }}>
+                      {node.reasoning.map((step, idx) => (
+                        <div key={idx} style={{ marginBottom: 4 }}>• {step}</div>
+                      ))}
+                    </div>
+
+                    <div style={{ color: '#888888', fontFamily: 'JetBrains Mono, monospace', fontSize: 9 }}>
+                      TOOL: <strong style={{ color: '#ffffff' }}>{node.toolsInvoked[0]}</strong>
+                    </div>
+                  </div>
+                )}
+
+                {/* Node Bottom Metrics Stats Bar */}
                 <div style={{
                   padding: '8px 14px', background: '#000000', borderTop: '1px solid #141414',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  fontSize: 10, fontFamily: 'JetBrains Mono, monospace', color: '#666666'
+                  fontSize: 9, fontFamily: 'JetBrains Mono, monospace', color: '#666666'
                 }}>
-                  <div style={{ display: 'flex', gap: 12 }}>
+                  <div style={{ display: 'flex', gap: 10 }}>
                     <span>IN: <strong style={{ color: '#ffffff' }}>{node.stats.inputs}</strong></span>
                     <span>PROC: <strong style={{ color: '#ffffff' }}>{node.stats.processed}</strong></span>
                     <span>OUT: <strong style={{ color: '#ffffff' }}>{node.stats.outputs}</strong></span>
@@ -649,7 +683,7 @@ export default function WorkflowPage() {
 
         </div>
 
-        {/* Floating Centered n8n Canvas Control Toolbar (Interactive Tool Selection & Drag Mode) */}
+        {/* Floating Centered n8n Canvas Control Toolbar */}
         <div style={{
           position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
           zIndex: 40, background: '#050505', border: '1px solid #262626',
@@ -691,7 +725,7 @@ export default function WorkflowPage() {
         </div>
       </div>
 
-      {/* Expanded Node Configurations & Payload Inspector Modal Drawer */}
+      {/* Expanded Payload Inspector Drawer */}
       {selectedNode && (
         <div style={{
           position: 'fixed', top: 52, right: 0, bottom: 0, width: 480,
