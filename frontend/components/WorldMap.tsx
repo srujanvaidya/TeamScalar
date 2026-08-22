@@ -210,7 +210,7 @@ export default function WorldMap({
           font-family: inherit;
         }
         .leaflet-tile {
-          filter: grayscale(100%) invert(100%) contrast(140%) brightness(85%) hue-rotate(180deg) !important;
+          filter: brightness(85%) contrast(110%) !important;
         }
       `}</style>
     </div>
