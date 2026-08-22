@@ -55,16 +55,15 @@ function resolveAreaCoords(areaName: string): [number, number] {
 }
 
 export default function CommandCenterPage() {
-  const { hitlPending, setPenaltyAvoided, setCarbonSaved, setHitlPending } = useStore();
+  const { hitlPending, setPenaltyAvoided, setCarbonSaved } = useStore();
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const [mapSize, setMapSize] = useState({ w: 800, h: 600 });
+  const [mapSize, setMapSize] = useState({ w: 800, h: 520 });
   const [loading, setLoading] = useState(true);
 
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [selectedCargoId, setSelectedCargoId] = useState<string>('CONT-8001');
   const [activeAltRouteId, setActiveAltRouteId] = useState<string | null>(null);
   const [showJsonMsg, setShowJsonMsg] = useState(false);
-  const [viewTab, setViewTab] = useState<'COMPARISON' | 'LEGS' | 'ALTERNATES'>('COMPARISON');
   const [funnelOpen, setFunnelOpen] = useState(false);
   const [approvedRouteId, setApprovedRouteId] = useState<string | null>(null);
 
@@ -92,7 +91,6 @@ export default function CommandCenterPage() {
           const origin = row.origin || 'Port of Los Angeles';
           const destination = row.destination || 'Port of New York/New Jersey';
 
-          // Extract raw database route column (e.g. ["Port of Los Angeles", "Panama Canal", "Port of New York/New Jersey"])
           let rawDbRoute: string[] = [];
           if (Array.isArray(row.route)) {
             rawDbRoute = row.route;
@@ -316,7 +314,7 @@ export default function CommandCenterPage() {
     const obs = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (entry) {
-        setMapSize({ w: entry.contentRect.width, h: entry.contentRect.height });
+        setMapSize({ w: entry.contentRect.width, h: 520 });
       }
     });
     if (mapContainerRef.current) obs.observe(mapContainerRef.current);
@@ -340,15 +338,15 @@ export default function CommandCenterPage() {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', flexDirection: 'column', background: '#000000', color: '#ffffff', overflow: 'hidden' }}>
-      {/* Monochromatic Header */}
+    <div className="scroll-y" style={{ height: '100vh', background: '#000000', color: '#ffffff', overflowY: 'auto' }}>
+      {/* Sticky Monochromatic Top Header */}
       <header style={{
-        height: 48, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 20px', borderBottom: '1px solid #1a1a1a',
-        background: '#000000', flexShrink: 0, fontSize: 12, fontFamily: 'Inter, sans-serif'
+        height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 24px', borderBottom: '1px solid #1a1a1a',
+        background: '#000000', position: 'sticky', top: 0, zIndex: 100, fontSize: 12, fontFamily: 'Inter, sans-serif'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontWeight: 800, color: '#ffffff', letterSpacing: '0.06em' }}>COMMAND CENTER</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <span style={{ fontWeight: 800, color: '#ffffff', letterSpacing: '0.06em', fontSize: 13 }}>COMMAND CENTER</span>
           <span style={{ color: '#333333' }}>|</span>
           <span style={{ color: '#888888', fontSize: 11 }}>REAL-TIME MULTIMODAL TELEMETRY</span>
         </div>
@@ -359,7 +357,7 @@ export default function CommandCenterPage() {
             onClick={() => setFunnelOpen(true)}
             style={{
               background: '#ffffff', color: '#000000', border: 'none',
-              borderRadius: 4, padding: '5px 12px', fontSize: 11,
+              borderRadius: 4, padding: '6px 14px', fontSize: 11,
               fontWeight: 800, cursor: 'pointer'
             }}
           >
@@ -370,7 +368,7 @@ export default function CommandCenterPage() {
             onClick={fetchBackendShipments}
             style={{
               background: '#111111', border: '1px solid #333333',
-              color: '#ffffff', borderRadius: 4, padding: '5px 12px', fontSize: 11,
+              color: '#ffffff', borderRadius: 4, padding: '6px 14px', fontSize: 11,
               fontWeight: 600, cursor: 'pointer'
             }}
           >
@@ -394,7 +392,7 @@ export default function CommandCenterPage() {
                 }}
                 style={{
                   background: '#111111', color: '#ffffff', border: '1px solid #333333',
-                  borderRadius: 4, padding: '5px 12px', fontSize: 12, fontWeight: 700, outline: 'none', cursor: 'pointer'
+                  borderRadius: 4, padding: '6px 14px', fontSize: 12, fontWeight: 700, outline: 'none', cursor: 'pointer'
                 }}
               >
                 {shipments.map(s => (
@@ -408,14 +406,14 @@ export default function CommandCenterPage() {
         </div>
       </header>
 
-      {/* Main Map Viewport */}
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: '#000000' }}>
+      {/* Spacious 520px Leaflet Map Section */}
+      <div style={{ height: 520, position: 'relative', background: '#000000', borderBottom: '1px solid #1a1a1a' }}>
         {selectedShipment?.blockchain_provenance && (
           <div style={{
-            position: 'absolute', top: 16, left: 16, zIndex: 30, maxWidth: 460,
+            position: 'absolute', top: 20, left: 24, zIndex: 30, maxWidth: 460,
             background: 'rgba(0, 0, 0, 0.95)', backdropFilter: 'blur(12px)',
-            border: '1px solid #333333', borderRadius: 6, padding: '12px 16px',
-            fontSize: 11, fontFamily: 'Inter, sans-serif', boxShadow: '0 12px 32px rgba(0,0,0,0.9)'
+            border: '1px solid #333333', borderRadius: 8, padding: '14px 18px',
+            fontSize: 11, fontFamily: 'Inter, sans-serif', boxShadow: '0 16px 40px rgba(0,0,0,0.9)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <span style={{ color: '#ffffff', fontWeight: 800, letterSpacing: '0.05em' }}>AGENT 2 OPTIMIZED PATHFINDING</span>
@@ -462,132 +460,153 @@ export default function CommandCenterPage() {
         </div>
       </div>
 
-      {/* Monochromatic Bottom Data Drawer (High Density Route Comparison & Human Approval Matrix) */}
+      {/* Spacious Scrollable Content Below Map */}
       {selectedShipment && (
-        <div style={{
-          height: 280, borderTop: '1px solid #1a1a1a',
-          background: '#000000', display: 'flex', flexDirection: 'column', flexShrink: 0
-        }}>
-          {/* Drawer Header Navbar */}
-          <div style={{
-            padding: '10px 20px', background: '#0a0a0a', borderBottom: '1px solid #1f1f1f',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <span style={{ fontWeight: 800, color: '#ffffff', fontFamily: 'JetBrains Mono, monospace', fontSize: 13 }}>
-                {selectedShipment.vessel_name}
-              </span>
-              <span style={{ color: '#aaaaaa', fontWeight: 700, fontSize: 11 }}>
-                CONTAINER: {selectedShipment.cargo_id}
-              </span>
-              <span style={{ color: '#333333' }}>|</span>
-              <span style={{ color: '#ffffff', fontWeight: 700, fontSize: 11 }}>
-                ACTIVE REROUTE: {selectedAltRoute ? selectedAltRoute.waypoints.join(' ➔ ') : `${selectedShipment.origin} ➔ ${selectedShipment.destination}`}
-              </span>
-              {approvedRouteId ? (
-                <span className="badge badge-low" style={{ background: '#22c55e', color: '#000000', fontWeight: 800 }}>
-                  [HUMAN APPROVED & ANCHORED ON-CHAIN]
-                </span>
-              ) : (
-                <span className="badge badge-low">
-                  [AGENT OPTIMIZED - SAVES ${selectedAltRoute ? Math.round(selectedShipment.metrics.cost_usd - selectedAltRoute.base_freight_cost_usd).toLocaleString() : '13,000'} | {selectedAltRoute ? Math.round(selectedShipment.metrics.transit_hours - selectedAltRoute.estimated_transit_hours) : 120} HOURS]
-                </span>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 11 }}>
-              <div style={{ display: 'flex', background: '#000000', borderRadius: 4, overflow: 'hidden', border: '1px solid #333333' }}>
-                <button
-                  onClick={() => setViewTab('COMPARISON')}
-                  style={{
-                    padding: '6px 14px', background: viewTab === 'COMPARISON' ? '#ffffff' : 'transparent',
-                    color: viewTab === 'COMPARISON' ? '#000000' : '#888888', border: 'none', cursor: 'pointer', fontWeight: 800
-                  }}
-                >
-                  ROUTE COMPARISON & HUMAN APPROVAL
-                </button>
-                <button
-                  onClick={() => setViewTab('LEGS')}
-                  style={{
-                    padding: '6px 14px', background: viewTab === 'LEGS' ? '#ffffff' : 'transparent',
-                    color: viewTab === 'LEGS' ? '#000000' : '#888888', border: 'none', cursor: 'pointer', fontWeight: 700
-                  }}
-                >
-                  PLOTTED LEGS ({activeLegs.length})
-                </button>
-                <button
-                  onClick={() => setViewTab('ALTERNATES')}
-                  style={{
-                    padding: '6px 14px', background: viewTab === 'ALTERNATES' ? '#ffffff' : 'transparent',
-                    color: viewTab === 'ALTERNATES' ? '#000000' : '#888888', border: 'none', cursor: 'pointer', fontWeight: 700
-                  }}
-                >
-                  ALL AGENT OPTIONS ({selectedShipment.alternate_routes.length})
-                </button>
+        <div style={{ padding: '32px 40px', display: 'flex', flexDirection: 'column', gap: 32, background: '#000000' }}>
+          
+          {/* SECTION 1: Selected Ship Telemetry Header Card */}
+          <div style={{ background: '#050505', border: '1px solid #1f1f1f', borderRadius: 8, padding: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#888888', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                  ACTIVE CARGO SHIPMENT TELEMETRY
+                </div>
+                <h2 style={{ fontSize: 22, fontWeight: 800, color: '#ffffff', marginTop: 4 }}>
+                  {selectedShipment.vessel_name} <span style={{ color: '#888888', fontSize: 16, fontWeight: 600 }}>({selectedShipment.cargo_id})</span>
+                </h2>
+                <div style={{ fontSize: 13, color: '#cccccc', marginTop: 6, fontFamily: 'JetBrains Mono, monospace' }}>
+                  ORIGIN: <strong style={{ color: '#ffffff' }}>{selectedShipment.origin}</strong> ➔ DESTINATION: <strong style={{ color: '#ffffff' }}>{selectedShipment.destination}</strong>
+                </div>
               </div>
 
-              <button
-                onClick={() => setShowJsonMsg(!showJsonMsg)}
-                style={{
-                  background: showJsonMsg ? '#ffffff' : '#111111',
-                  color: showJsonMsg ? '#000000' : '#ffffff',
-                  border: '1px solid #333333', padding: '5px 12px', borderRadius: 4, cursor: 'pointer', fontWeight: 600
-                }}
-              >
-                {showJsonMsg ? 'Hide On-Chain JSON' : 'JSON Inspector'}
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <span className="badge badge-critical" style={{ padding: '6px 12px', fontSize: 11 }}>
+                  [{selectedShipment.current_status}]
+                </span>
+                {approvedRouteId ? (
+                  <span className="badge badge-low" style={{ background: '#22c55e', color: '#000000', fontWeight: 800, padding: '6px 12px', fontSize: 11 }}>
+                    [HUMAN APPROVED & ANCHORED ON-CHAIN]
+                  </span>
+                ) : (
+                  <span className="badge badge-low" style={{ padding: '6px 12px', fontSize: 11 }}>
+                    [AGENT OPTIMIZED - SAVES ${selectedAltRoute ? Math.round(selectedShipment.metrics.cost_usd - selectedAltRoute.base_freight_cost_usd).toLocaleString() : '13,000'} | {selectedAltRoute ? Math.round(selectedShipment.metrics.transit_hours - selectedAltRoute.estimated_transit_hours) : 120} HOURS]
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Metrics Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginTop: 24, paddingTop: 20, borderTop: '1px solid #1a1a1a' }}>
+              <div style={{ background: '#0a0a0a', border: '1px solid #1f1f1f', borderRadius: 6, padding: 14 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#888888' }}>NORMAL TRANSIT DURATION</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: '#ef4444', marginTop: 4 }}>{selectedShipment.metrics.transit_hours} Hours</div>
+                <div style={{ fontSize: 10, color: '#666666', marginTop: 2 }}>Bottleneck delay exposed</div>
+              </div>
+
+              <div style={{ background: '#0a0a0a', border: '1px solid #1f1f1f', borderRadius: 6, padding: 14 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#888888' }}>OPTIMIZED TRANSIT DURATION</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: '#22c55e', marginTop: 4 }}>{selectedAltRoute ? selectedAltRoute.estimated_transit_hours : 48.0} Hours</div>
+                <div style={{ fontSize: 10, color: '#22c55e', marginTop: 2 }}>
+                  Saves {selectedAltRoute ? Math.round(selectedShipment.metrics.transit_hours - selectedAltRoute.estimated_transit_hours) : 120} hours
+                </div>
+              </div>
+
+              <div style={{ background: '#0a0a0a', border: '1px solid #1f1f1f', borderRadius: 6, padding: 14 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#888888' }}>OPTIMIZED FREIGHT COST</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: '#ffffff', marginTop: 4 }}>
+                  ${selectedAltRoute ? selectedAltRoute.base_freight_cost_usd.toLocaleString() : '11,500'}
+                </div>
+                <div style={{ fontSize: 10, color: '#888888', marginTop: 2 }}>vs Normal ${selectedShipment.metrics.cost_usd.toLocaleString()}</div>
+              </div>
+
+              <div style={{ background: '#0a0a0a', border: '1px solid #1f1f1f', borderRadius: 6, padding: 14 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#888888' }}>POLYGON AMOY PROVENANCE</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#ffffff', marginTop: 6, fontFamily: 'JetBrains Mono, monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {selectedShipment.blockchain_provenance?.tx_hash || 'Verified On-Chain'}
+                </div>
+                <div style={{ fontSize: 10, color: '#22c55e', marginTop: 2 }}>[VERIFIED ON-CHAIN]</div>
+              </div>
             </div>
           </div>
 
-          {showJsonMsg && (
-            <div style={{ padding: 12, background: '#050505', borderBottom: '1px solid #1f1f1f', fontSize: 11, fontFamily: 'JetBrains Mono, monospace' }}>
-              <div style={{ color: '#ffffff', fontWeight: 700, marginBottom: 4 }}>
-                BACKEND REAL-TIME BLOCKCHAIN JSON TELEMETRY:
+          {/* SECTION 2: Route Comparison Matrix & Human Approval Action Card */}
+          <div style={{ background: '#050505', border: '1px solid #1f1f1f', borderRadius: 8, padding: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#888888', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                  HUMAN-IN-THE-LOOP AUTHORIZATION MATRIX
+                </div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#ffffff', marginTop: 2 }}>
+                  Route Cost & Transit Comparison — Human Approval Gate
+                </h3>
               </div>
-              <pre style={{ margin: 0, color: '#ffffff', background: '#000000', padding: 10, borderRadius: 4, maxHeight: 100, overflow: 'auto', border: '1px solid #222' }}>
-{JSON.stringify(selectedAltRoute?.blockchain_message || selectedShipment.blockchain_provenance, null, 2)}
-              </pre>
-            </div>
-          )}
 
-          {/* TAB 1: ROUTE COMPARISON MATRIX & HUMAN APPROVAL ACTION */}
-          {viewTab === 'COMPARISON' && (
-            <div className="scroll-y" style={{ flex: 1, padding: 12 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, fontFamily: 'Inter, sans-serif' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <button
+                  onClick={() => setShowJsonMsg(!showJsonMsg)}
+                  style={{
+                    background: showJsonMsg ? '#ffffff' : '#111111',
+                    color: showJsonMsg ? '#000000' : '#ffffff',
+                    border: '1px solid #333333', padding: '6px 14px', borderRadius: 4, cursor: 'pointer', fontWeight: 600, fontSize: 11
+                  }}
+                >
+                  {showJsonMsg ? 'Hide Raw JSON Inspector' : 'Toggle Raw JSON Inspector'}
+                </button>
+              </div>
+            </div>
+
+            {showJsonMsg && (
+              <div style={{ padding: 16, background: '#000000', border: '1px solid #222222', borderRadius: 6, marginBottom: 20, fontSize: 11, fontFamily: 'JetBrains Mono, monospace' }}>
+                <div style={{ color: '#ffffff', fontWeight: 700, marginBottom: 6 }}>
+                  BACKEND REAL-TIME BLOCKCHAIN JSON TELEMETRY:
+                </div>
+                <pre style={{ margin: 0, color: '#ffffff', background: '#080808', padding: 12, borderRadius: 4, maxHeight: 160, overflow: 'auto', border: '1px solid #1a1a1a' }}>
+{JSON.stringify(selectedAltRoute?.blockchain_message || selectedShipment.blockchain_provenance, null, 2)}
+                </pre>
+              </div>
+            )}
+
+            {/* Un-cluttered Full-Width Comparison Table */}
+            <div style={{ border: '1px solid #1f1f1f', borderRadius: 6, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: 'Inter, sans-serif' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid #1f1f1f', background: '#000000' }}>
-                    {['Route Option & Type', 'Waypoints Path', 'Transit Hours', 'Freight Cost (USD)', 'Cost Savings vs Normal', 'Risk Grade', 'Human Approval Action'].map(h => (
-                      <th key={h} style={{ padding: '8px 14px', textAlign: 'left', color: '#888888', fontWeight: 700, fontSize: 10, letterSpacing: '0.04em' }}>{h}</th>
-                    ))}
+                  <tr style={{ borderBottom: '1px solid #1f1f1f', background: '#0a0a0a' }}>
+                    <th style={{ padding: '14px 20px', textAlign: 'left', color: '#888888', fontWeight: 700, fontSize: 11 }}>Route Option & Type</th>
+                    <th style={{ padding: '14px 20px', textAlign: 'left', color: '#888888', fontWeight: 700, fontSize: 11 }}>Waypoints Path</th>
+                    <th style={{ padding: '14px 20px', textAlign: 'left', color: '#888888', fontWeight: 700, fontSize: 11 }}>Transit Duration</th>
+                    <th style={{ padding: '14px 20px', textAlign: 'left', color: '#888888', fontWeight: 700, fontSize: 11 }}>Base Freight Cost</th>
+                    <th style={{ padding: '14px 20px', textAlign: 'left', color: '#888888', fontWeight: 700, fontSize: 11 }}>Cost Savings</th>
+                    <th style={{ padding: '14px 20px', textAlign: 'left', color: '#888888', fontWeight: 700, fontSize: 11 }}>Risk Grade</th>
+                    <th style={{ padding: '14px 20px', textAlign: 'left', color: '#888888', fontWeight: 700, fontSize: 11 }}>Human Approval Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {/* Row 1: Normal / Default Unoptimized Route */}
-                  <tr style={{ borderBottom: '1px solid #111111', background: '#050505' }}>
-                    <td style={{ padding: '10px 14px', fontWeight: 700, color: '#ef4444' }}>
+                  {/* Row 1: Normal Unoptimized Route */}
+                  <tr style={{ borderBottom: '1px solid #181818', background: '#000000' }}>
+                    <td style={{ padding: '14px 20px', fontWeight: 700, color: '#ef4444' }}>
                       [NORMAL / UNOPTIMIZED ROUTE]
                     </td>
-                    <td style={{ padding: '10px 14px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#aaaaaa' }}>
+                    <td style={{ padding: '14px 20px', fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#aaaaaa' }}>
                       {selectedShipment.active_route_coords.length > 2 ? `${selectedShipment.origin} ➔ CANAL ➔ ${selectedShipment.destination}` : `${selectedShipment.origin} ➔ ${selectedShipment.destination}`}
                     </td>
-                    <td style={{ padding: '10px 14px', color: '#ffffff', fontWeight: 600 }}>
+                    <td style={{ padding: '14px 20px', color: '#ffffff', fontWeight: 600 }}>
                       {selectedShipment.metrics.transit_hours}h
                     </td>
-                    <td style={{ padding: '10px 14px', color: '#ef4444', fontWeight: 800 }}>
+                    <td style={{ padding: '14px 20px', color: '#ef4444', fontWeight: 800 }}>
                       ${selectedShipment.metrics.cost_usd.toLocaleString()}
                     </td>
-                    <td style={{ padding: '10px 14px', color: '#888888', fontStyle: 'italic' }}>
+                    <td style={{ padding: '14px 20px', color: '#666666', fontStyle: 'italic' }}>
                       — (Baseline)
                     </td>
-                    <td style={{ padding: '10px 14px' }}>
+                    <td style={{ padding: '14px 20px' }}>
                       <span className="badge badge-critical">[HIGH RISK - BOTTLENECK]</span>
                     </td>
-                    <td style={{ padding: '10px 14px' }}>
-                      <span style={{ color: '#666666', fontSize: 10 }}>[Default Path]</span>
+                    <td style={{ padding: '14px 20px' }}>
+                      <span style={{ color: '#666666', fontSize: 11, fontWeight: 600 }}>[Default Path]</span>
                     </td>
                   </tr>
 
-                  {/* Rows 2+: Agent 2 & Agent 3 Multi-Modal Optimized Candidates */}
+                  {/* Rows 2+: Agent 2 & Agent 3 Multi-Modal Candidates */}
                   {selectedShipment.alternate_routes.map((alt) => {
                     const isSelected = activeAltRouteId === alt.route_id;
                     const isApproved = approvedRouteId === alt.route_id;
@@ -595,28 +614,28 @@ export default function CommandCenterPage() {
                     const timeSavings = Math.round(selectedShipment.metrics.transit_hours - alt.estimated_transit_hours);
 
                     return (
-                      <tr key={alt.route_id} style={{ borderBottom: '1px solid #111111', background: isSelected ? '#0d0d0d' : '#000000' }}>
-                        <td style={{ padding: '10px 14px', fontWeight: 800, color: '#ffffff', fontFamily: 'JetBrains Mono, monospace' }}>
+                      <tr key={alt.route_id} style={{ borderBottom: '1px solid #181818', background: isSelected ? '#0d0d0d' : '#000000' }}>
+                        <td style={{ padding: '14px 20px', fontWeight: 800, color: '#ffffff', fontFamily: 'JetBrains Mono, monospace' }}>
                           [AGENT OPTIMIZED] {alt.route_id}
                         </td>
-                        <td style={{ padding: '10px 14px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#ffffff' }}>
+                        <td style={{ padding: '14px 20px', fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#ffffff' }}>
                           {alt.waypoints.join(' ➔ ')}
                         </td>
-                        <td style={{ padding: '10px 14px', color: '#22c55e', fontWeight: 700 }}>
-                          {alt.estimated_transit_hours}h <span style={{ color: '#888888', fontSize: 10 }}>(Saves {timeSavings}h)</span>
+                        <td style={{ padding: '14px 20px', color: '#22c55e', fontWeight: 700 }}>
+                          {alt.estimated_transit_hours}h <span style={{ color: '#888888', fontSize: 11 }}>(Saves {timeSavings}h)</span>
                         </td>
-                        <td style={{ padding: '10px 14px', color: '#ffffff', fontWeight: 800 }}>
+                        <td style={{ padding: '14px 20px', color: '#ffffff', fontWeight: 800 }}>
                           ${alt.base_freight_cost_usd.toLocaleString()}
                         </td>
-                        <td style={{ padding: '10px 14px', color: costDelta >= 0 ? '#22c55e' : '#eab308', fontWeight: 700 }}>
+                        <td style={{ padding: '14px 20px', color: costDelta >= 0 ? '#22c55e' : '#eab308', fontWeight: 700 }}>
                           {costDelta >= 0 ? `Saves $${costDelta.toLocaleString()}` : `+$${Math.abs(costDelta).toLocaleString()} (Express Air)`}
                         </td>
-                        <td style={{ padding: '10px 14px' }}>
+                        <td style={{ padding: '14px 20px' }}>
                           <span className="badge badge-low">[LOW RISK]</span>
                         </td>
-                        <td style={{ padding: '10px 14px' }}>
+                        <td style={{ padding: '14px 20px' }}>
                           {isApproved ? (
-                            <span style={{ color: '#22c55e', fontWeight: 800, fontSize: 11 }}>
+                            <span style={{ color: '#22c55e', fontWeight: 800, fontSize: 12 }}>
                               [HUMAN APPROVED]
                             </span>
                           ) : (
@@ -626,8 +645,8 @@ export default function CommandCenterPage() {
                                 background: isSelected ? '#ffffff' : '#111111',
                                 color: isSelected ? '#000000' : '#ffffff',
                                 border: '1px solid #ffffff',
-                                padding: '5px 14px', borderRadius: 4,
-                                cursor: 'pointer', fontWeight: 800, fontSize: 10
+                                padding: '6px 16px', borderRadius: 4,
+                                cursor: 'pointer', fontWeight: 800, fontSize: 11
                               }}
                             >
                               {isSelected ? 'Approve & Execute Reroute' : 'Select & Approve Route'}
@@ -640,16 +659,23 @@ export default function CommandCenterPage() {
                 </tbody>
               </table>
             </div>
-          )}
+          </div>
 
-          {/* TAB 2: PLOTTED ROUTE LEGS */}
-          {viewTab === 'LEGS' && (
-            <div className="scroll-y" style={{ flex: 1 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, fontFamily: 'Inter, sans-serif' }}>
+          {/* SECTION 3: Leg-by-Leg Route Breakdown & On-Chain Hashes */}
+          <div style={{ background: '#050505', border: '1px solid #1f1f1f', borderRadius: 8, padding: 24 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#888888', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>
+              PLOTTED ROUTE LEGS & TIMESTAMPS
+            </div>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: '#ffffff', marginBottom: 16 }}>
+              Leg-by-Leg Intermodal Breakdown ({activeLegs.length} Segments)
+            </h3>
+
+            <div style={{ border: '1px solid #1f1f1f', borderRadius: 6, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: 'Inter, sans-serif' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid #1f1f1f', background: '#000000' }}>
+                  <tr style={{ borderBottom: '1px solid #1f1f1f', background: '#0a0a0a' }}>
                     {['Leg ID', 'Transport Mode', 'From Area -> To Area', 'Departure UTC', 'Arrival UTC', 'Distance / Hours', 'Blockchain Tx Hash'].map(h => (
-                      <th key={h} style={{ padding: '8px 16px', textAlign: 'left', color: '#888888', fontWeight: 600, fontSize: 10 }}>{h}</th>
+                      <th key={h} style={{ padding: '12px 18px', textAlign: 'left', color: '#888888', fontWeight: 700, fontSize: 11 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -661,32 +687,32 @@ export default function CommandCenterPage() {
                     const txHash = leg.tx_hash || selectedShipment.blockchain_provenance?.tx_hash || 'Verified On-Chain';
 
                     return (
-                      <tr key={leg.leg_id || idx} style={{ borderBottom: '1px solid #111111' }}>
-                        <td style={{ padding: '8px 16px', fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#ffffff' }}>
+                      <tr key={leg.leg_id || idx} style={{ borderBottom: '1px solid #141414' }}>
+                        <td style={{ padding: '12px 18px', fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#ffffff' }}>
                           {leg.leg_id || `LEG-0${idx + 1}`}
                         </td>
-                        <td style={{ padding: '8px 16px', color: '#ffffff', fontWeight: 600 }}>
-                          <span style={{ background: '#111111', padding: '4px 8px', borderRadius: 4, border: '1px solid #333333', fontSize: 10 }}>
-                            {modeLabel}
+                        <td style={{ padding: '12px 18px', color: '#ffffff', fontWeight: 600 }}>
+                          <span style={{ background: '#111111', padding: '4px 10px', borderRadius: 4, border: '1px solid #333333', fontSize: 11 }}>
+                            [{modeLabel}]
                           </span>
                         </td>
-                        <td style={{ padding: '8px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#cccccc' }}>
+                        <td style={{ padding: '12px 18px', fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#cccccc' }}>
                           <span style={{ color: '#ffffff', fontWeight: 700 }}>{leg.from_node}</span>
                           <span style={{ color: '#888888', margin: '0 6px' }}>-&gt;</span>
                           <span style={{ color: '#ffffff', fontWeight: 700 }}>{leg.to_node}</span>
                         </td>
-                        <td style={{ padding: '8px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#ffffff' }}>
+                        <td style={{ padding: '12px 18px', fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#ffffff' }}>
                           {depDate}
                         </td>
-                        <td style={{ padding: '8px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#ffffff' }}>
+                        <td style={{ padding: '12px 18px', fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#ffffff' }}>
                           {arrDate}
                         </td>
-                        <td style={{ padding: '8px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#888888' }}>
+                        <td style={{ padding: '12px 18px', fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#888888' }}>
                           {leg.distance_km ? `${leg.distance_km.toLocaleString()} km` : '—'} | <strong style={{ color: '#fff' }}>{leg.transit_hours || '—'}h</strong>
                         </td>
-                        <td style={{ padding: '8px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#ffffff' }}>
-                          <span style={{ background: '#181818', border: '1px solid #333333', padding: '3px 8px', borderRadius: 3 }}>
-                            {txHash.slice(0, 16)}...
+                        <td style={{ padding: '12px 18px', fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#ffffff' }}>
+                          <span style={{ background: '#181818', border: '1px solid #333333', padding: '4px 10px', borderRadius: 4 }}>
+                            {txHash.slice(0, 18)}...
                           </span>
                         </td>
                       </tr>
@@ -695,71 +721,7 @@ export default function CommandCenterPage() {
                 </tbody>
               </table>
             </div>
-          )}
-
-          {/* TAB 3: ALL AGENT OPTIONS */}
-          {viewTab === 'ALTERNATES' && (
-            <div className="scroll-y" style={{ flex: 1 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, fontFamily: 'Inter, sans-serif' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid #1f1f1f', background: '#000000' }}>
-                    {['Route ID', 'Modal Chain', 'Start Area', 'End Area', 'Est. Hours', 'Cost (USD)', 'Risk Grade', 'Action'].map(h => (
-                      <th key={h} style={{ padding: '8px 16px', textAlign: 'left', color: '#888888', fontWeight: 600, fontSize: 10 }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedShipment.alternate_routes.map((alt) => {
-                    const isActive = activeAltRouteId === alt.route_id;
-
-                    return (
-                      <tr key={alt.route_id} style={{ background: isActive ? '#111111' : undefined, borderBottom: '1px solid #111111' }}>
-                        <td style={{ padding: '8px 16px', fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: isActive ? '#ffffff' : '#888888' }}>
-                          {alt.route_id}
-                        </td>
-                        <td style={{ padding: '8px 16px', color: '#cccccc', fontFamily: 'JetBrains Mono, monospace', fontSize: 10 }}>
-                          {alt.modal_sequence.join(' -> ')}
-                        </td>
-                        <td style={{ padding: '8px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#ffffff' }}>
-                          {alt.blockchain_message?.start_node || alt.waypoints[0]}
-                        </td>
-                        <td style={{ padding: '8px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#ffffff' }}>
-                          {alt.blockchain_message?.end_node || alt.waypoints[alt.waypoints.length - 1]}
-                        </td>
-                        <td style={{ padding: '8px 16px', color: '#ffffff' }}>
-                          {alt.estimated_transit_hours}h
-                        </td>
-                        <td style={{ padding: '8px 16px', color: '#ffffff' }}>
-                          ${alt.base_freight_cost_usd.toLocaleString()}
-                        </td>
-                        <td style={{ padding: '8px 16px' }}>
-                          <span className={`badge ${alt.risk_grade === 'LOW' ? 'badge-low' : alt.risk_grade === 'HIGH' ? 'badge-critical' : 'badge-medium'}`}>
-                            {alt.risk_grade} RISK
-                          </span>
-                        </td>
-                        <td style={{ padding: '8px 16px' }}>
-                          <button
-                            style={{
-                              padding: '4px 12px', fontSize: 10, borderRadius: 4, cursor: 'pointer',
-                              background: isActive ? '#ffffff' : 'transparent',
-                              border: isActive ? '1px solid #ffffff' : '1px solid #333333',
-                              color: isActive ? '#000000' : '#ffffff',
-                              fontWeight: isActive ? 700 : 500
-                            }}
-                            onClick={() => {
-                              handleApproveRoute(alt.route_id, alt.base_freight_cost_usd, alt.estimated_transit_hours);
-                            }}
-                          >
-                            {isActive ? 'Approve Route' : 'Select Route'}
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+          </div>
         </div>
       )}
 
