@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { useRouter } from 'next/navigation';
 import { supabase, BlockchainAudit } from '@/lib/supabase';
-import { Shield, Coins, ExternalLink, Calendar, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 
 const DEMO_AUDIT_LOGS: BlockchainAudit[] = [
   {
@@ -15,10 +14,10 @@ const DEMO_AUDIT_LOGS: BlockchainAudit[] = [
     action_type: 'REROUTE_APPROVED',
     financial_impact_usd: 64200.00,
     reasoning_markdown: `### Escalation Summary
-- Primary ocean route blocked at **Port of Shanghai** due to labor dispute.
+- Primary ocean route blocked at Port of Shanghai due to labor dispute.
 - Alternate rail path selected to meet 48-hour SLA window.
-- Total cost impact exceeds **$50,000 threshold** ($64,200 total).
-- **Recommendation:** Approve rail freight booking to prevent $180,000 OTIF breach penalty.`,
+- Total cost impact exceeds $50,000 threshold ($64,200 total).
+- Recommendation: Approve rail freight booking to prevent $180,000 OTIF breach penalty.`,
     contract_address: '0xbe6E842E5CCD8752EF538B7874530F3bE702e8Ae',
     created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
   },
@@ -122,80 +121,79 @@ export default function AuditExplorerPage() {
     switch (value) {
       case 'critical': return '#ef4444';
       case 'high': return '#f97316';
-      case 'medium': return '#eab308';
-      case 'low': return '#22c55e';
+      case 'medium': return '#888888';
+      case 'low': return '#ffffff';
       default: return 'rgba(255, 255, 255, 0.05)';
     }
   };
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-void)', overflow: 'hidden' }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#000000', overflow: 'hidden' }}>
       <header style={{
-        height: 48, display: 'flex', alignItems: 'center', padding: '0 16px',
-        borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-deep)',
+        height: 48, display: 'flex', alignItems: 'center', padding: '0 20px',
+        borderBottom: '1px solid #1a1a1a', background: '#000000',
         gap: 12, flexShrink: 0,
       }}>
-        <Shield size={16} color="var(--text-muted)" />
-        <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)' }}>Blockchain Audit & Compliance Explorer</span>
-        {loading && <RefreshCw size={12} style={{ marginLeft: 'auto', animation: 'spin 1s linear infinite' }} />}
+        <span style={{ fontWeight: 800, fontSize: 13, color: '#ffffff', letterSpacing: '0.06em' }}>AUDIT EXPLORER</span>
+        <span style={{ color: '#333333' }}>|</span>
+        <span style={{ fontSize: 11, color: '#888888' }}>BLOCKCHAIN COMPLIANCE LEDGER</span>
       </header>
 
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid var(--border-subtle)' }}>
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)' }}>
-            <div style={{ fontWeight: 600, fontSize: 12, color: 'var(--text-primary)' }}>Live Blockchain Ledger</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Immutable record of all route approvals, twin creations and escrows</div>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid #1a1a1a' }}>
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid #1f1f1f', background: '#0a0a0a' }}>
+            <div style={{ fontWeight: 700, fontSize: 13, color: '#ffffff' }}>Live On-Chain Immutable Ledger</div>
+            <div style={{ fontSize: 11, color: '#888888', marginTop: 2 }}>Verifiable records of route approvals, container twin creations, and escrows</div>
           </div>
 
           <div className="scroll-y" style={{ flex: 1 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-deep)', position: 'sticky', top: 0, zIndex: 10 }}>
-                  <th style={{ padding: '8px 16px', textAlign: 'left', color: 'var(--text-muted)', fontSize: 10, fontWeight: 500 }}>TIMESTAMP</th>
-                  <th style={{ padding: '8px 16px', textAlign: 'left', color: 'var(--text-muted)', fontSize: 10, fontWeight: 500 }}>CARGO ID</th>
-                  <th style={{ padding: '8px 16px', textAlign: 'left', color: 'var(--text-muted)', fontSize: 10, fontWeight: 500 }}>ACTION TYPE</th>
-                  <th style={{ padding: '8px 16px', textAlign: 'left', color: 'var(--text-muted)', fontSize: 10, fontWeight: 500 }}>FINANCIAL IMPACT</th>
-                  <th style={{ padding: '8px 16px', textAlign: 'left', color: 'var(--text-muted)', fontSize: 10, fontWeight: 500 }}>TX HASH</th>
-                  <th style={{ padding: '8px 16px', textAlign: 'left', color: 'var(--text-muted)', fontSize: 10, fontWeight: 500 }}>STATUS</th>
-                  <th style={{ padding: '8px 16px', textAlign: 'left', color: 'var(--text-muted)', fontSize: 10, fontWeight: 500 }}></th>
+                <tr style={{ borderBottom: '1px solid #1f1f1f', background: '#000000', position: 'sticky', top: 0, zIndex: 10 }}>
+                  <th style={{ padding: '8px 16px', textAlign: 'left', color: '#888888', fontSize: 10, fontWeight: 600 }}>TIMESTAMP</th>
+                  <th style={{ padding: '8px 16px', textAlign: 'left', color: '#888888', fontSize: 10, fontWeight: 600 }}>CARGO ID</th>
+                  <th style={{ padding: '8px 16px', textAlign: 'left', color: '#888888', fontSize: 10, fontWeight: 600 }}>ACTION TYPE</th>
+                  <th style={{ padding: '8px 16px', textAlign: 'left', color: '#888888', fontSize: 10, fontWeight: 600 }}>FINANCIAL IMPACT</th>
+                  <th style={{ padding: '8px 16px', textAlign: 'left', color: '#888888', fontSize: 10, fontWeight: 600 }}>TX HASH</th>
+                  <th style={{ padding: '8px 16px', textAlign: 'left', color: '#888888', fontSize: 10, fontWeight: 600 }}>STATUS</th>
+                  <th style={{ padding: '8px 16px', textAlign: 'left', color: '#888888', fontSize: 10, fontWeight: 600 }}>DETAILS</th>
                 </tr>
               </thead>
               <tbody>
                 {displayLogs.map((log) => {
                   const isExpanded = expandedId === log.id;
                   return (
-                    <tr key={log.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                      <td style={{ padding: '12px 16px', color: 'var(--text-primary)' }} className="text-mono">
+                    <tr key={log.id} style={{ borderBottom: '1px solid #111111' }}>
+                      <td style={{ padding: '12px 16px', color: '#ffffff', fontFamily: 'JetBrains Mono, monospace' }}>
                         {new Date(log.created_at).toLocaleTimeString()}
                       </td>
-                      <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-primary)' }}>{log.cargo_id}</td>
+                      <td style={{ padding: '12px 16px', fontWeight: 700, color: '#ffffff' }}>{log.cargo_id}</td>
                       <td style={{ padding: '12px 16px' }}>
-                        <span className={`badge ${log.action_type.includes('APPROVED') ? 'badge-info' : log.action_type.includes('MINTED') ? 'badge-neutral' : 'badge-low'}`}>
+                        <span className={`badge ${log.action_type.includes('APPROVED') ? 'badge-low' : log.action_type.includes('MINTED') ? 'badge-neutral' : 'badge-info'}`}>
                           {log.action_type}
                         </span>
                       </td>
-                      <td style={{ padding: '12px 16px', color: log.financial_impact_usd > 0 ? '#ef4444' : 'var(--text-muted)' }}>
+                      <td style={{ padding: '12px 16px', color: log.financial_impact_usd > 0 ? '#ef4444' : '#888888', fontFamily: 'JetBrains Mono, monospace' }}>
                         {log.financial_impact_usd > 0 ? `$${log.financial_impact_usd.toLocaleString()}` : '—'}
                       </td>
                       <td style={{ padding: '12px 16px' }}>
                         <a
                           href={`https://polygonscan.com/tx/${log.tx_hash}`}
                           target="_blank" rel="noopener noreferrer"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--text-secondary)', textDecoration: 'none', fontFamily: 'monospace' }}
+                          style={{ color: '#ffffff', textDecoration: 'none', fontFamily: 'JetBrains Mono, monospace', fontSize: 11 }}
                         >
-                          {log.tx_hash.slice(0, 10)}...
-                          <ExternalLink size={10} />
+                          {log.tx_hash.slice(0, 14)}...
                         </a>
                       </td>
                       <td style={{ padding: '12px 16px' }}>
-                        <span style={{ color: '#22c55e', fontWeight: 600, fontSize: 11 }}>● VERIFIED</span>
+                        <span style={{ color: '#ffffff', fontWeight: 700, fontSize: 11 }}>VERIFIED ON-CHAIN</span>
                       </td>
                       <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                         <button
                           onClick={() => toggleRow(log.id)}
-                          style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                          style={{ background: '#0a0a0a', border: '1px solid #333333', color: '#ffffff', padding: '4px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
                         >
-                          {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                          {isExpanded ? 'Hide' : 'View'}
                         </button>
                       </td>
                     </tr>
@@ -206,72 +204,70 @@ export default function AuditExplorerPage() {
           </div>
         </div>
 
-        <div style={{ width: 300, background: 'var(--bg-deep)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div style={{ padding: 16, borderBottom: '1px solid var(--border-subtle)' }}>
-            <div style={{ fontWeight: 600, fontSize: 12, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Coins size={14} color="var(--text-secondary)" />
+        <div style={{ width: 320, background: '#000000', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ padding: 16, borderBottom: '1px solid #1f1f1f', background: '#0a0a0a' }}>
+            <div style={{ fontWeight: 700, fontSize: 13, color: '#ffffff' }}>
               Smart Contract Status
             </div>
           </div>
 
           <div style={{ flex: 1, padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ background: 'var(--bg-surface)', borderRadius: 10, border: '1px solid var(--border-subtle)', padding: 14 }}>
-              <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--text-primary)', marginBottom: 4 }}>📦 Container Twin Token</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12, fontFamily: 'monospace' }}>
+            <div style={{ background: '#0a0a0a', borderRadius: 8, border: '1px solid #222222', padding: 16 }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: '#ffffff', marginBottom: 4 }}>Container Twin Token</div>
+              <div style={{ fontSize: 11, color: '#888888', marginBottom: 12, fontFamily: 'JetBrains Mono, monospace' }}>
                 0x48B0DB4e87D280AFB3fDC572f61A641E7261D74D
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Total Twin Tokens Minted</span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)' }}>2,847</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                <span style={{ fontSize: 11, color: '#888888' }}>Total Twin Tokens Minted</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#ffffff' }}>2,847</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Active Cargo Twins</span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)' }}>341</span>
+                <span style={{ fontSize: 11, color: '#888888' }}>Active Cargo Twins</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#ffffff' }}>341</span>
               </div>
             </div>
 
-            <div style={{ background: 'var(--bg-surface)', borderRadius: 10, border: '1px solid var(--border-subtle)', padding: 14 }}>
-              <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--text-primary)', marginBottom: 4 }}>🔒 Carrier Escrow Contract</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12, fontFamily: 'monospace' }}>
+            <div style={{ background: '#0a0a0a', borderRadius: 8, border: '1px solid #222222', padding: 16 }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: '#ffffff', marginBottom: 4 }}>Carrier Escrow Contract</div>
+              <div style={{ fontSize: 11, color: '#888888', marginBottom: 12, fontFamily: 'JetBrains Mono, monospace' }}>
                 0xbe6E842E5CCD8752EF538B7874530F3bE702e8Ae
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Total Settled Escrows</span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: '#22c55e' }}>$1,248,500</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                <span style={{ fontSize: 11, color: '#888888' }}>Total Settled Escrows</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#ffffff' }}>$1,248,500</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Pending Escrows</span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: '#eab308' }}>$127,400</span>
+                <span style={{ fontSize: 11, color: '#888888' }}>Pending Escrows</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#888888' }}>$127,400</span>
               </div>
             </div>
 
-            <div style={{ background: 'var(--bg-surface)', borderRadius: 10, border: '1px solid var(--border-subtle)', padding: 14 }}>
-              <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--text-primary)', marginBottom: 10 }}>SLA Compliance Rate</div>
+            <div style={{ background: '#0a0a0a', borderRadius: 8, border: '1px solid #222222', padding: 16 }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: '#ffffff', marginBottom: 10 }}>SLA Compliance Rate</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                <div style={{ fontSize: 24, fontWeight: 800, color: '#22c55e' }}>96.4%</div>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', lineHeight: 1.3 }}>
+                <div style={{ fontSize: 26, fontWeight: 800, color: '#ffffff' }}>96.4%</div>
+                <div style={{ fontSize: 11, color: '#888888', lineHeight: 1.3 }}>
                   Average carrier on-time rate across all reroutes
                 </div>
               </div>
-              <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2 }}>
-                <div style={{ height: '100%', width: '96.4%', background: '#22c55e', borderRadius: 2 }} />
+              <div style={{ height: 4, background: '#222222', borderRadius: 2 }}>
+                <div style={{ height: '100%', width: '96.4%', background: '#ffffff', borderRadius: 2 }} />
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div style={{ height: 160, borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-deep)', flexShrink: 0, padding: '12px 16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-          <Calendar size={13} color="var(--text-secondary)" />
-          <span style={{ fontWeight: 600, fontSize: 12, color: 'var(--text-primary)' }}>Disruption Heat Calendar</span>
-          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Historical daily disruption index (last 365 days)</span>
+      <div style={{ height: 160, borderTop: '1px solid #1a1a1a', background: '#000000', flexShrink: 0, padding: '12px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+          <span style={{ fontWeight: 700, fontSize: 12, color: '#ffffff' }}>Disruption Heat Calendar</span>
+          <span style={{ fontSize: 11, color: '#888888' }}>Historical daily disruption index (last 365 days)</span>
 
           <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
             {['low', 'medium', 'high', 'critical'].map(lvl => (
               <div key={lvl} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <div style={{ width: 8, height: 8, borderRadius: 2, background: getHeatColor(lvl) }} />
-                <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>{lvl}</span>
+                <span style={{ fontSize: 9, color: '#888888' }}>{lvl}</span>
               </div>
             ))}
           </div>
