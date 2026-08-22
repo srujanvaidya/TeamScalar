@@ -90,3 +90,46 @@ def get_event_by_hash(event_hash: str) -> dict[str, Any] | None:
         .execute()
     )
     return response.data[0] if response.data else None
+
+
+def insert_ship(ship_id: str, name: str) -> dict[str, Any] | None:
+    """
+    Insert a new ship into the ships table, ignoring if it already exists.
+    """
+    try:
+        response = supabase.table("ships").upsert({"id": ship_id, "name": name}).execute()
+        return response.data[0] if response.data else None
+    except Exception as e:
+        print(f"Error inserting ship {ship_id}: {e}")
+        return None
+
+
+def get_active_containers_on_ship(ship_id: str) -> list[str]:
+    """
+    Retrieve a list of unique container_ids currently associated with a ship.
+    """
+    response = (
+        supabase.table(TABLE)
+        .select("container_id")
+        .eq("ship_id", ship_id)
+        .execute()
+    )
+    
+    # Extract unique container IDs
+    container_ids = set(row["container_id"] for row in response.data)
+    return list(container_ids)
+
+
+def get_container_history_with_ship_name(container_id: str) -> list[dict[str, Any]]:
+    """
+    Retrieves the complete chronological history of a container for the dashboard,
+    including the joined human-readable ship name.
+    """
+    response = (
+        supabase.table(TABLE)
+        .select("*, ships(name)")
+        .eq("container_id", container_id)
+        .order("timestamp", desc=False)
+        .execute()
+    )
+    return response.data

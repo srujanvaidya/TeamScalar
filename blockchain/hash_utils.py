@@ -15,11 +15,11 @@ from typing import Any
 # Fields that are part of the event identity (included in hash)
 _HASH_FIELDS = [
     "container_id",
+    "ship_id",
     "current_location",
     "origin",
     "destination",
     "route",
-    "scanned_by",
     "event_type",
     "timestamp",
 ]
