@@ -11,9 +11,30 @@ import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
-from web3 import Web3
-from web3.middleware import ExtraDataToPOAMiddleware
-from supabase import create_client, Client
+
+try:
+    from web3 import Web3
+    from web3.middleware import ExtraDataToPOAMiddleware
+except ImportError:
+    for sp in [
+        "/Users/tanmaykadam/miniconda3/lib/python3.13/site-packages",
+        "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages"
+    ]:
+        if sp not in sys.path and os.path.exists(sp):
+            sys.path.append(sp)
+    from web3 import Web3
+    from web3.middleware import ExtraDataToPOAMiddleware
+
+try:
+    from supabase import create_client, Client
+except ImportError:
+    for sp in [
+        "/Users/tanmaykadam/miniconda3/lib/python3.13/site-packages",
+        "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages"
+    ]:
+        if sp not in sys.path and os.path.exists(sp):
+            sys.path.append(sp)
+    from supabase import create_client, Client
 
 # Load .env / .env.local from project root and frontend/
 _root_dir = Path(__file__).resolve().parent.parent

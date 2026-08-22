@@ -66,6 +66,7 @@ export default function CommandCenterPage() {
   const [showJsonMsg, setShowJsonMsg] = useState(false);
   const [funnelOpen, setFunnelOpen] = useState(false);
   const [approvedRouteId, setApprovedRouteId] = useState<string | null>(null);
+  const [approving, setApproving] = useState(false);
 
   // Fetch real backend data & Supabase ships, containers & calculate Agent 2 / Agent 3 alternate routes
   const fetchBackendShipments = async () => {
@@ -159,8 +160,8 @@ export default function CommandCenterPage() {
 
           const alt2Waypoints = isUSRoute
             ? [origin, 'AIR_ATLANTA_01', destination]
-            : [origin, 'AIR_DUBAI', destination];
-          
+            : [origin, 'AIR_DUBAI', 'HUB_FRANKFURT_01', destination];
+
           const alt2Coords = alt2Waypoints.map(w => resolveAreaCoords(w));
 
           const alt2Legs: RouteLeg[] = [
@@ -249,7 +250,7 @@ export default function CommandCenterPage() {
                 risk_grade: 'LOW',
                 color_gradient: [30, 144, 255],
                 blockchain_message: {
-                  action: 'AGENT_2_EXPRESS_AIR_BRIDGE',
+                  action: 'EXPRESS_AIR_CARGO_BYPASS',
                   start_node: `${origin} (Port)`,
                   end_node: `${destination} (Port)`,
                   leg_summary: 'EXPRESS AIR CARGO (Saves 153.5h)',
@@ -330,15 +331,71 @@ export default function CommandCenterPage() {
       ? selectedShipment.route_legs
       : [];
 
-  const handleApproveRoute = (routeId: string, cost: number, hours: number) => {
+  // HUMAN-IN-THE-LOOP ROUTE APPROVAL BUTTON HANDLER (TRIGGERS under_reroute.py / POLYGON BROADCAST)
+  const handleApproveRoute = async (routeId: string, cost: number, hours: number) => {
     setActiveAltRouteId(routeId);
     setApprovedRouteId(routeId);
-    setPenaltyAvoided(180000);
-    setCarbonSaved(950);
+    setApproving(true);
+
+    if (!selectedShipment) {
+      setApproving(false);
+      return;
+    }
+
+    const altRoute = selectedShipment.alternate_routes?.find(r => r.route_id === routeId) || selectedAltRoute;
+    const waypoints = altRoute ? altRoute.waypoints : [selectedShipment.origin, selectedShipment.destination];
+    const location = waypoints[0] || selectedShipment.origin;
+
+    try {
+      // Call FastAPI backend endpoint which triggers blockchain/under_reroute.py via subprocess
+      const res = await fetch('http://localhost:8000/api/v1/blockchain/reroute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ship_id: selectedShipment.vessel_name || 'SHIP-002',
+          location: location,
+          route: waypoints
+        })
+      });
+
+      if (res.ok) {
+        const receipt = await res.json();
+        console.log('Polygon Amoy Transaction Broadcast Receipt:', receipt);
+
+        if (receipt.tx_hash) {
+          setShipments(prev => prev.map(s => {
+            if (s.cargo_id === selectedShipment.cargo_id) {
+              const baseProv = s.blockchain_provenance || {
+                tx_hash: receipt.tx_hash,
+                block_number: 4829210,
+                contract_address: '0xbe6E842E5CCD8752EF538B7874530F3bE702e8Ae',
+                origin_point: s.origin,
+                destination_point: s.destination,
+                verified_on_chain: true
+              };
+              return {
+                ...s,
+                blockchain_provenance: {
+                  ...baseProv,
+                  tx_hash: receipt.tx_hash,
+                  verified_on_chain: true,
+                  timestamp: receipt.anchored_timestamp || new Date().toISOString()
+                }
+              };
+            }
+            return s;
+          }));
+        }
+      }
+    } catch (err) {
+      console.warn('API call to /api/v1/blockchain/reroute notice:', err);
+    } finally {
+      setApproving(false);
+    }
   };
 
   return (
-    <div className="scroll-y" style={{ height: '100vh', background: '#000000', color: '#ffffff', overflowY: 'auto' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#000000', color: '#ffffff', overflowY: 'auto' }}>
       {/* Sticky Monochromatic Top Header */}
       <header style={{
         height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -449,83 +506,58 @@ export default function CommandCenterPage() {
           </div>
         )}
 
+        {/* Map Container */}
         <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }}>
-          <WorldMap
-            shipments={shipments}
-            selectedShipment={selectedShipment}
-            activeAlternateRouteId={activeAltRouteId}
-            width={mapSize.w}
-            height={mapSize.h}
-          />
+          {selectedShipment && (
+            <WorldMap
+              width={mapSize.w}
+              height={mapSize.h}
+              shipments={shipments}
+              selectedShipment={selectedShipment}
+              activeAlternateRouteId={activeAltRouteId}
+            />
+          )}
         </div>
       </div>
 
-      {/* Spacious Scrollable Content Below Map */}
+      {/* Details Container */}
       {selectedShipment && (
-        <div style={{ padding: '32px 40px', display: 'flex', flexDirection: 'column', gap: 32, background: '#000000' }}>
+        <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
           
-          {/* SECTION 1: Selected Ship Telemetry Header Card */}
-          <div style={{ background: '#050505', border: '1px solid #1f1f1f', borderRadius: 8, padding: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-              <div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#888888', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                  ACTIVE CARGO SHIPMENT TELEMETRY
-                </div>
-                <h2 style={{ fontSize: 22, fontWeight: 800, color: '#ffffff', marginTop: 4 }}>
-                  {selectedShipment.vessel_name} <span style={{ color: '#888888', fontSize: 16, fontWeight: 600 }}>({selectedShipment.cargo_id})</span>
-                </h2>
-                <div style={{ fontSize: 13, color: '#cccccc', marginTop: 6, fontFamily: 'JetBrains Mono, monospace' }}>
-                  ORIGIN: <strong style={{ color: '#ffffff' }}>{selectedShipment.origin}</strong> ➔ DESTINATION: <strong style={{ color: '#ffffff' }}>{selectedShipment.destination}</strong>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                <span className="badge badge-critical" style={{ padding: '6px 12px', fontSize: 11 }}>
-                  [{selectedShipment.current_status}]
-                </span>
-                {approvedRouteId ? (
-                  <span className="badge badge-low" style={{ background: '#22c55e', color: '#000000', fontWeight: 800, padding: '6px 12px', fontSize: 11 }}>
-                    [HUMAN APPROVED & ANCHORED ON-CHAIN]
-                  </span>
-                ) : (
-                  <span className="badge badge-low" style={{ padding: '6px 12px', fontSize: 11 }}>
-                    [AGENT OPTIMIZED - SAVES ${selectedAltRoute ? Math.round(selectedShipment.metrics.cost_usd - selectedAltRoute.base_freight_cost_usd).toLocaleString() : '13,000'} | {selectedAltRoute ? Math.round(selectedShipment.metrics.transit_hours - selectedAltRoute.estimated_transit_hours) : 120} HOURS]
-                  </span>
-                )}
+          {/* SECTION 1: Active Vessel KPI Telemetry Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+            <div style={{ background: '#050505', border: '1px solid #1f1f1f', borderRadius: 8, padding: 18 }}>
+              <div style={{ fontSize: 10, color: '#888888', fontWeight: 700, letterSpacing: '0.05em' }}>VESSEL & CONTAINER ID</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: '#ffffff', marginTop: 4 }}>{selectedShipment.vessel_name}</div>
+              <div style={{ fontSize: 11, color: '#888888', marginTop: 2, fontFamily: 'JetBrains Mono, monospace' }}>
+                Container: {selectedShipment.cargo_id}
               </div>
             </div>
 
-            {/* Metrics Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginTop: 24, paddingTop: 20, borderTop: '1px solid #1a1a1a' }}>
-              <div style={{ background: '#0a0a0a', border: '1px solid #1f1f1f', borderRadius: 6, padding: 14 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#888888' }}>NORMAL TRANSIT DURATION</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: '#ef4444', marginTop: 4 }}>{selectedShipment.metrics.transit_hours} Hours</div>
-                <div style={{ fontSize: 10, color: '#666666', marginTop: 2 }}>Bottleneck delay exposed</div>
+            <div style={{ background: '#050505', border: '1px solid #1f1f1f', borderRadius: 8, padding: 18 }}>
+              <div style={{ fontSize: 10, color: '#888888', fontWeight: 700, letterSpacing: '0.05em' }}>ORIGIN ➔ DESTINATION</div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#ffffff', marginTop: 4 }}>
+                {selectedShipment.origin} ➔ {selectedShipment.destination}
               </div>
+              <div style={{ fontSize: 11, color: '#eab308', marginTop: 2 }}>[DISRUPTED CORRIDOR]</div>
+            </div>
 
-              <div style={{ background: '#0a0a0a', border: '1px solid #1f1f1f', borderRadius: 6, padding: 14 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#888888' }}>OPTIMIZED TRANSIT DURATION</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: '#22c55e', marginTop: 4 }}>{selectedAltRoute ? selectedAltRoute.estimated_transit_hours : 48.0} Hours</div>
-                <div style={{ fontSize: 10, color: '#22c55e', marginTop: 2 }}>
-                  Saves {selectedAltRoute ? Math.round(selectedShipment.metrics.transit_hours - selectedAltRoute.estimated_transit_hours) : 120} hours
-                </div>
+            <div style={{ background: '#050505', border: '1px solid #1f1f1f', borderRadius: 8, padding: 18 }}>
+              <div style={{ fontSize: 10, color: '#888888', fontWeight: 700, letterSpacing: '0.05em' }}>DEFAULT VS OPTIMIZED TIME</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: '#22c55e', marginTop: 4 }}>
+                {selectedAltRoute ? `${selectedAltRoute.estimated_transit_hours}h` : `${selectedShipment.metrics.transit_hours}h`}
               </div>
+              <div style={{ fontSize: 11, color: '#888888', marginTop: 2 }}>
+                {selectedAltRoute ? `Saves ${Math.round(selectedShipment.metrics.transit_hours - selectedAltRoute.estimated_transit_hours)}h vs Default` : 'Baseline'}
+              </div>
+            </div>
 
-              <div style={{ background: '#0a0a0a', border: '1px solid #1f1f1f', borderRadius: 6, padding: 14 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#888888' }}>OPTIMIZED FREIGHT COST</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: '#ffffff', marginTop: 4 }}>
-                  ${selectedAltRoute ? selectedAltRoute.base_freight_cost_usd.toLocaleString() : '11,500'}
-                </div>
-                <div style={{ fontSize: 10, color: '#888888', marginTop: 2 }}>vs Normal ${selectedShipment.metrics.cost_usd.toLocaleString()}</div>
+            <div style={{ background: '#050505', border: '1px solid #1f1f1f', borderRadius: 8, padding: 18 }}>
+              <div style={{ fontSize: 10, color: '#888888', fontWeight: 700, letterSpacing: '0.05em' }}>POLYGON AMOY PROVENANCE</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#ffffff', marginTop: 4, fontFamily: 'JetBrains Mono, monospace' }}>
+                {selectedShipment.blockchain_provenance?.tx_hash ? `${selectedShipment.blockchain_provenance.tx_hash.slice(0, 16)}...` : 'Verified On-Chain'}
               </div>
-
-              <div style={{ background: '#0a0a0a', border: '1px solid #1f1f1f', borderRadius: 6, padding: 14 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#888888' }}>POLYGON AMOY PROVENANCE</div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#ffffff', marginTop: 6, fontFamily: 'JetBrains Mono, monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {selectedShipment.blockchain_provenance?.tx_hash || 'Verified On-Chain'}
-                </div>
-                <div style={{ fontSize: 10, color: '#22c55e', marginTop: 2 }}>[VERIFIED ON-CHAIN]</div>
-              </div>
+              <div style={{ fontSize: 10, color: '#22c55e', marginTop: 2 }}>[VERIFIED ON-CHAIN]</div>
             </div>
           </div>
 
@@ -641,15 +673,16 @@ export default function CommandCenterPage() {
                           ) : (
                             <button
                               onClick={() => handleApproveRoute(alt.route_id, alt.base_freight_cost_usd, alt.estimated_transit_hours)}
+                              disabled={approving}
                               style={{
                                 background: isSelected ? '#ffffff' : '#111111',
                                 color: isSelected ? '#000000' : '#ffffff',
                                 border: '1px solid #ffffff',
                                 padding: '6px 16px', borderRadius: 4,
-                                cursor: 'pointer', fontWeight: 800, fontSize: 11
+                                cursor: approving ? 'not-allowed' : 'pointer', fontWeight: 800, fontSize: 11
                               }}
                             >
-                              {isSelected ? 'Approve & Execute Reroute' : 'Select & Approve Route'}
+                              {approving ? '[Broadcasting to Polygon...]' : isSelected ? 'Approve & Execute Reroute' : 'Select & Approve Route'}
                             </button>
                           )}
                         </td>
