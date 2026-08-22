@@ -3,6 +3,28 @@
 import { useEffect, useRef } from 'react';
 import 'leaflet/dist/leaflet.css';
 
+export type RouteLeg = {
+  leg_id?: string;
+  from_node: string;
+  from_type: string;
+  to_node: string;
+  to_type: string;
+  mode: string;
+  distance_km?: number;
+  transit_hours?: number;
+  coords?: [number, number][];
+};
+
+export type BlockchainProvenance = {
+  tx_hash: string;
+  block_number: number;
+  contract_address: string;
+  origin_point: string;
+  destination_point: string;
+  verified_on_chain: boolean;
+  timestamp?: string;
+};
+
 export type AlternateRoute = {
   route_id: string;
   modal_sequence: string[];
@@ -13,6 +35,15 @@ export type AlternateRoute = {
   co2_emissions_kg: number;
   risk_grade: 'LOW' | 'MODERATE' | 'HIGH';
   color_gradient: [number, number, number];
+  blockchain_message?: {
+    action: string;
+    start_node: string;
+    end_node: string;
+    leg_summary: string;
+    tx_hash: string;
+    verified_on_chain: boolean;
+  };
+  leg_breakdown?: RouteLeg[];
 };
 
 export type Shipment = {
@@ -30,6 +61,8 @@ export type Shipment = {
     co2_kg: number;
     sla_risk: string;
   };
+  blockchain_provenance?: BlockchainProvenance;
+  route_legs?: RouteLeg[];
   alternate_routes: AlternateRoute[];
 };
 
@@ -52,7 +85,6 @@ export default function WorldMap({
   const mapInstanceRef = useRef<any>(null);
   const layerGroupRef = useRef<any>(null);
 
-  // Initialize Leaflet Map exactly as in provided spec template
   useEffect(() => {
     if (!mapContainerRef.current) return;
     if (mapInstanceRef.current) return;
@@ -60,7 +92,6 @@ export default function WorldMap({
     import('leaflet').then((L) => {
       if (!mapContainerRef.current || mapInstanceRef.current) return;
 
-      // Initialize map view
       const map = L.map(mapContainerRef.current, {
         center: [20.0, 30.0],
         zoom: 3,
@@ -68,12 +99,10 @@ export default function WorldMap({
         attributionControl: false,
       });
 
-      // OpenStreetMap tile layer (inverted via CSS .leaflet-tile-pane for black monochromatic look)
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
       }).addTo(map);
 
-      // Add Zoom Controls
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
       const layerGroup = L.layerGroup().addTo(map);
@@ -92,7 +121,6 @@ export default function WorldMap({
     };
   }, []);
 
-  // Update map features when selected shipment or alternate route changes
   useEffect(() => {
     if (!mapInstanceRef.current || !layerGroupRef.current) return;
 
@@ -118,7 +146,7 @@ export default function WorldMap({
     // 1. Draw Active Route Line (Monochromatic White / Red)
     const activeCoords = shipment.active_route_coords.map(([lat, lon]) => [lat, lon] as [number, number]);
     if (activeCoords.length > 1) {
-      const activePolyline = L.polyline(activeCoords, {
+      L.polyline(activeCoords, {
         color: isBlocked ? '#ef4444' : '#ffffff',
         weight: 4,
         opacity: 0.9,
@@ -127,7 +155,7 @@ export default function WorldMap({
       activeCoords.forEach(c => bounds.extend(c));
     }
 
-    // 2. Draw Selected Alternate Route Line (Dashed)
+    // 2. Draw Selected Alternate Route Line (Dashed) & Waypoint Leg Transfer Nodes (Road -> Port -> Dist)
     if (altRouteId && shipment.alternate_routes) {
       const alt = shipment.alternate_routes.find((r) => r.route_id === altRouteId);
       if (alt && alt.waypoint_coords && alt.waypoint_coords.length > 1) {
@@ -141,6 +169,29 @@ export default function WorldMap({
         }).addTo(layerGroup);
 
         altCoords.forEach(c => bounds.extend(c));
+
+        // Draw Waypoint Leg Nodes (e.g. Road Hub, Port, Rail, Dist Hub)
+        alt.waypoint_coords.forEach((coord, idx) => {
+          const nodeName = alt.waypoints[idx] || `Point ${idx + 1}`;
+          const isOrigin = idx === 0;
+          const isDest = idx === alt.waypoint_coords.length - 1;
+
+          const waypointMarker = L.circleMarker([coord[0], coord[1]], {
+            radius: isOrigin || isDest ? 7 : 5,
+            fillColor: isOrigin ? '#22c55e' : isDest ? '#38bdf8' : '#e2e8f0',
+            color: '#000000',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.9,
+          }).addTo(layerGroup);
+
+          waypointMarker.bindTooltip(
+            `<div style="font-family: monospace; font-size: 10px; padding: 2px 6px; background: #111; color: #fff; border: 1px solid #444; border-radius: 4px;">
+              ${isOrigin ? '🏁 START: ' : isDest ? '🎯 END: ' : '📍 WAYPOINT: '} <strong>${nodeName}</strong>
+            </div>`,
+            { permanent: false, direction: 'top' }
+          );
+        });
       }
     }
 
@@ -177,7 +228,6 @@ export default function WorldMap({
     <div style={{ position: 'relative', width: '100%', height: '100%', background: '#000000' }}>
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
-      {/* Invert OpenStreetMap Tile Pane into Monochromatic Black Map (Exact template CSS) */}
       <style jsx global>{`
         .leaflet-container {
           background: #000000 !important;

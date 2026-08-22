@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/store/useStore';
 import WorldMap, { Shipment } from '@/components/WorldMap';
 import HITLModal from '@/components/HITLModal';
-import { Shield, ChevronRight, RefreshCw, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { Shield, ChevronRight, RefreshCw, AlertTriangle, CheckCircle, Clock, Link as LinkIcon, Cpu, Navigation, FileCode } from 'lucide-react';
 
 const FALLBACK_SHIPMENTS: Shipment[] = [
   {
@@ -25,11 +25,20 @@ const FALLBACK_SHIPMENTS: Shipment[] = [
       co2_kg: 1850.0,
       sla_risk: "HIGH"
     },
+    blockchain_provenance: {
+      tx_hash: "0x7f9a1b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a",
+      block_number: 4829103,
+      contract_address: "0xbe6E842E5CCD8752EF538B7874530F3bE702e8Ae",
+      origin_point: "PORT_SHANGHAI_01 [31.2304, 121.4737]",
+      destination_point: "PORT_ROTTERDAM_02 [51.9244, 4.4777]",
+      verified_on_chain: true,
+      timestamp: "2026-08-22T19:20:00Z"
+    },
     alternate_routes: [
       {
         route_id: "ROUTE_ALT_A",
-        modal_sequence: ["ROAD_TRUCK", "RAIL_FREIGHT"],
-        waypoints: ["HUB_SHANGHAI", "HUB_WARSAW", "DIST_BERLIN"],
+        modal_sequence: ["ROAD_TRUCK", "RAIL_FREIGHT", "ROAD_TRUCK"],
+        waypoints: ["HUB_SHANGHAI", "RAIL_CHENGDU", "HUB_WARSAW", "DIST_BERLIN"],
         waypoint_coords: [
           [31.23, 121.47], [30.57, 104.07], [52.23, 21.01], [52.52, 13.4]
         ],
@@ -37,7 +46,20 @@ const FALLBACK_SHIPMENTS: Shipment[] = [
         base_freight_cost_usd: 18450.00,
         co2_emissions_kg: 1240.5,
         risk_grade: "LOW",
-        color_gradient: [56, 142, 60]
+        color_gradient: [56, 142, 60],
+        blockchain_message: {
+          action: "PROPOSING_REROUTE_TRANSACTION",
+          start_node: "HUB_SHANGHAI (Road Hub)",
+          end_node: "DIST_BERLIN (Distribution Center)",
+          leg_summary: "ROAD -> RAIL -> ROAD",
+          tx_hash: "0x3a2b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b",
+          verified_on_chain: true
+        },
+        leg_breakdown: [
+          { from_node: "HUB_SHANGHAI", from_type: "ROAD", to_node: "RAIL_CHENGDU", to_type: "RAIL", mode: "ROAD_TRUCK", transit_hours: 18.0 },
+          { from_node: "RAIL_CHENGDU", from_type: "RAIL", to_node: "HUB_WARSAW", to_type: "HUB", mode: "RAIL_FREIGHT", transit_hours: 84.5 },
+          { from_node: "HUB_WARSAW", from_type: "HUB", to_node: "DIST_BERLIN", to_type: "DIST", mode: "ROAD_TRUCK", transit_hours: 8.0 }
+        ]
       },
       {
         route_id: "ROUTE_ALT_B",
@@ -50,7 +72,19 @@ const FALLBACK_SHIPMENTS: Shipment[] = [
         base_freight_cost_usd: 29100.00,
         co2_emissions_kg: 3400.0,
         risk_grade: "HIGH",
-        color_gradient: [239, 68, 68]
+        color_gradient: [239, 68, 68],
+        blockchain_message: {
+          action: "EXPRESS_AIR_REROUTE_CONTRACT",
+          start_node: "PORT_SHANGHAI (Port)",
+          end_node: "PORT_ROTTERDAM (Port)",
+          leg_summary: "PORT -> AIRPORT -> PORT",
+          tx_hash: "0x9d1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a",
+          verified_on_chain: true
+        },
+        leg_breakdown: [
+          { from_node: "PORT_SHANGHAI", from_type: "PORT", to_node: "AIR_DUBAI", to_type: "AIR", mode: "MARITIME", transit_hours: 120.0 },
+          { from_node: "AIR_DUBAI", from_type: "AIR", to_node: "PORT_ROTTERDAM", to_type: "PORT", mode: "AIR_FREIGHT", transit_hours: 45.0 }
+        ]
       }
     ]
   },
@@ -71,10 +105,19 @@ const FALLBACK_SHIPMENTS: Shipment[] = [
       co2_kg: 980.0,
       sla_risk: "LOW"
     },
+    blockchain_provenance: {
+      tx_hash: "0x8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f",
+      block_number: 4828990,
+      contract_address: "0x48B0DB4e87D280AFB3fDC572f61A641E7261D74D",
+      origin_point: "PORT_SINGAPORE_01 [1.3521, 103.8198]",
+      destination_point: "PORT_DUBAI_01 [25.2048, 55.2708]",
+      verified_on_chain: true,
+      timestamp: "2026-08-22T18:45:00Z"
+    },
     alternate_routes: [
       {
         route_id: "ROUTE_ALT_C",
-        modal_sequence: ["MARITIME"],
+        modal_sequence: ["MARITIME", "ROAD_TRUCK"],
         waypoints: ["PORT_SINGAPORE", "HUB_MUMBAI", "PORT_DUBAI"],
         waypoint_coords: [
           [1.35, 103.82], [19.08, 72.88], [25.2, 55.27]
@@ -83,40 +126,19 @@ const FALLBACK_SHIPMENTS: Shipment[] = [
         base_freight_cost_usd: 9200.00,
         co2_emissions_kg: 850.0,
         risk_grade: "LOW",
-        color_gradient: [56, 142, 60]
-      }
-    ]
-  },
-  {
-    cargo_id: "CONT-33109-LAX",
-    mode: "MARITIME",
-    vessel_name: "EVER GIVEN",
-    origin: "PORT_BUSAN_01",
-    destination: "PORT_LOSANGELES_01",
-    current_status: "WEATHER_DELAY",
-    current_coordinates: [35.1796, 129.0756],
-    active_route_coords: [
-      [35.17, 129.07], [35.0, 160.0], [33.74, -118.27]
-    ],
-    metrics: {
-      transit_hours: 210.0,
-      cost_usd: 19500.0,
-      co2_kg: 2400.0,
-      sla_risk: "MODERATE"
-    },
-    alternate_routes: [
-      {
-        route_id: "ROUTE_ALT_D",
-        modal_sequence: ["MARITIME", "RAIL_FREIGHT"],
-        waypoints: ["PORT_BUSAN", "PORT_VANCOUVER", "HUB_CHICAGO"],
-        waypoint_coords: [
-          [35.17, 129.07], [49.28, -123.12], [41.88, -87.63]
-        ],
-        estimated_transit_hours: 195.0,
-        base_freight_cost_usd: 21200.00,
-        co2_emissions_kg: 2100.0,
-        risk_grade: "MODERATE",
-        color_gradient: [245, 158, 11]
+        color_gradient: [56, 142, 60],
+        blockchain_message: {
+          action: "PORT_TO_PORT_TRANSFER_ESCROW",
+          start_node: "PORT_SINGAPORE (Port)",
+          end_node: "PORT_DUBAI (Port)",
+          leg_summary: "PORT -> HUB -> PORT",
+          tx_hash: "0x5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d",
+          verified_on_chain: true
+        },
+        leg_breakdown: [
+          { from_node: "PORT_SINGAPORE", from_type: "PORT", to_node: "HUB_MUMBAI", to_type: "HUB", mode: "MARITIME", transit_hours: 48.0 },
+          { from_node: "HUB_MUMBAI", from_type: "HUB", to_node: "PORT_DUBAI", to_type: "PORT", mode: "MARITIME", transit_hours: 20.0 }
+        ]
       }
     ]
   }
@@ -131,8 +153,8 @@ export default function CommandCenterPage() {
   const [shipments, setShipments] = useState<Shipment[]>(FALLBACK_SHIPMENTS);
   const [selectedCargoId, setSelectedCargoId] = useState<string>("CONT-99482-SH");
   const [activeAltRouteId, setActiveAltRouteId] = useState<string | null>("ROUTE_ALT_A");
+  const [showJsonMsg, setShowJsonMsg] = useState(false);
 
-  // Fetch shipments from API
   useEffect(() => {
     const fetchShipments = async () => {
       setLoading(true);
@@ -153,7 +175,6 @@ export default function CommandCenterPage() {
     fetchShipments();
   }, []);
 
-  // Track map container size
   useEffect(() => {
     const obs = new ResizeObserver((entries) => {
       const entry = entries[0];
@@ -166,10 +187,11 @@ export default function CommandCenterPage() {
   }, []);
 
   const selectedShipment = shipments.find(s => s.cargo_id === selectedCargoId) || shipments[0];
+  const selectedAltRoute = selectedShipment.alternate_routes.find(r => r.route_id === activeAltRouteId) || selectedShipment.alternate_routes[0];
 
   return (
     <div style={{ display: 'flex', height: '100vh', flexDirection: 'column', background: '#000000', color: '#ffffff', overflow: 'hidden' }}>
-      {/* Monochromatic Header */}
+      {/* Header */}
       <header style={{
         height: 44, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 16px', borderBottom: '1px solid #1a1a1a',
@@ -177,12 +199,12 @@ export default function CommandCenterPage() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ffffff', boxShadow: '0 0 8px #ffffff' }} />
-          <span style={{ fontWeight: 800, color: '#ffffff', letterSpacing: '0.08em' }}>COMMAND CENTER // LIVE TRACKER</span>
+          <span style={{ fontWeight: 800, color: '#ffffff', letterSpacing: '0.08em' }}>COMMAND CENTER // BLOCKCHAIN LOCATION PROVENANCE</span>
         </div>
 
         {/* Shipment Selector */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ color: '#888888', fontSize: 10 }}>SELECT SHIPMENT:</span>
+          <span style={{ color: '#888888', fontSize: 10 }}>SHIPMENT PROVENANCE:</span>
           <select
             value={selectedCargoId}
             onChange={(e) => {
@@ -206,8 +228,43 @@ export default function CommandCenterPage() {
         </div>
       </header>
 
-      {/* Map Container */}
+      {/* Main Container */}
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: '#000000' }}>
+        {/* On-Chain Provenance Banner Overlay (Start Point to Destination) */}
+        {selectedShipment.blockchain_provenance && (
+          <div style={{
+            position: 'absolute', top: 12, left: 12, zIndex: 30, maxWidth: 420,
+            background: 'rgba(10, 10, 10, 0.92)', backdropFilter: 'blur(10px)',
+            border: '1px solid #333333', borderRadius: 6, padding: '10px 14px',
+            fontSize: 10, fontFamily: 'JetBrains Mono, monospace', boxShadow: '0 8px 24px rgba(0,0,0,0.8)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#22c55e', fontWeight: 800 }}>
+                <LinkIcon size={12} />
+                <span>VERIFIED ON-CHAIN PROVENANCE</span>
+              </div>
+              <span style={{ color: '#888888', fontSize: 9 }}>Block #{selectedShipment.blockchain_provenance.block_number}</span>
+            </div>
+
+            <div style={{ color: '#aaaaaa', marginBottom: 4 }}>
+              <strong>TX:</strong> <span style={{ color: '#ffffff' }}>{selectedShipment.blockchain_provenance.tx_hash}</span>
+            </div>
+
+            {/* Starting Point to Destination Breakdown */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6, paddingTop: 6, borderTop: '1px solid #222' }}>
+              <div>
+                <span style={{ color: '#666' }}>🏁 STARTING POINT: </span>
+                <span style={{ color: '#ffffff', fontWeight: 700 }}>{selectedShipment.blockchain_provenance.origin_point}</span>
+              </div>
+              <div>
+                <span style={{ color: '#666' }}>🎯 DESTINATION: </span>
+                <span style={{ color: '#ffffff', fontWeight: 700 }}>{selectedShipment.blockchain_provenance.destination_point}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Map View */}
         <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }}>
           <WorldMap
             shipments={shipments}
@@ -219,12 +276,12 @@ export default function CommandCenterPage() {
         </div>
       </div>
 
-      {/* Monochromatic Bottom Data Drawer */}
+      {/* Monochromatic Bottom Data Drawer with Blockchain Leg Breakdown */}
       <div style={{
-        height: 180, borderTop: '1px solid #1a1a1a',
+        height: 220, borderTop: '1px solid #1a1a1a',
         background: '#090909', display: 'flex', flexDirection: 'column', flexShrink: 0
       }}>
-        {/* Selected Cargo Summary Header */}
+        {/* Selected Cargo Header */}
         <div style={{
           padding: '8px 16px', background: '#111111', borderBottom: '1px solid #1f1f1f',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11
@@ -245,20 +302,38 @@ export default function CommandCenterPage() {
             </span>
           </div>
 
-          <div style={{ display: 'flex', gap: 16, fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}>
-            <span>Transit: <strong style={{ color: '#ffffff' }}>{selectedShipment.metrics.transit_hours}h</strong></span>
-            <span>Cost: <strong style={{ color: '#ffffff' }}>${selectedShipment.metrics.cost_usd.toLocaleString()}</strong></span>
-            <span>CO₂: <strong style={{ color: '#ffffff' }}>{selectedShipment.metrics.co2_kg} kg</strong></span>
-            <span>SLA Risk: <strong style={{ color: selectedShipment.metrics.sla_risk === 'HIGH' ? '#ef4444' : '#ffffff' }}>{selectedShipment.metrics.sla_risk}</strong></span>
+          <div style={{ display: 'flex', gap: 12, fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}>
+            <button
+              onClick={() => setShowJsonMsg(!showJsonMsg)}
+              style={{
+                background: showJsonMsg ? '#ffffff' : '#141414',
+                color: showJsonMsg ? '#000000' : '#ffffff',
+                border: '1px solid #333', padding: '3px 8px', borderRadius: 4, cursor: 'pointer'
+              }}
+            >
+              {showJsonMsg ? 'Hide On-Chain JSON' : '🔍 Inspect Blockchain JSON Payload'}
+            </button>
           </div>
         </div>
 
-        {/* Alternate Route Matrix Table */}
+        {/* JSON Message Inspector Modal Overlay */}
+        {showJsonMsg && selectedAltRoute?.blockchain_message && (
+          <div style={{ padding: 12, background: '#050505', borderBottom: '1px solid #222', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}>
+            <div style={{ color: '#22c55e', fontWeight: 700, marginBottom: 4 }}>
+              ⚡ BLOCKCHAIN JSON MESSAGE (ON-CHAIN ROUTE PROVENANCE):
+            </div>
+            <pre style={{ margin: 0, color: '#00ffcc', background: '#000', padding: 8, borderRadius: 4, overflowX: 'auto' }}>
+{JSON.stringify(selectedAltRoute.blockchain_message, null, 2)}
+            </pre>
+          </div>
+        )}
+
+        {/* Route Legs & Alternate Route Matrix Table */}
         <div className="scroll-y" style={{ flex: 1 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, fontFamily: 'Inter, sans-serif' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #1a1a1a', background: '#090909' }}>
-                {['Route ID', 'Modal Sequence', 'Waypoints', 'Est. Hours', 'Cost (USD)', 'CO₂ (kg)', 'Risk Grade', 'Action'].map(h => (
+                {['Route ID', 'Modal Leg Chain (Road ➔ Port ➔ Dist)', 'Starting Point', 'Ending Point', 'Est. Hours', 'Cost (USD)', 'Risk Grade', 'Blockchain Action'].map(h => (
                   <th key={h} style={{ padding: '6px 16px', textAlign: 'left', color: '#666666', fontWeight: 500, fontSize: 10 }}>{h}</th>
                 ))}
               </tr>
@@ -276,20 +351,20 @@ export default function CommandCenterPage() {
                     <td style={{ padding: '6px 16px', fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: isActive ? '#ffffff' : '#aaaaaa' }}>
                       {alt.route_id}
                     </td>
-                    <td style={{ padding: '6px 16px', color: '#cccccc' }}>
-                      {alt.modal_sequence.join(' → ')}
+                    <td style={{ padding: '6px 16px', color: '#cccccc', fontFamily: 'JetBrains Mono, monospace', fontSize: 10 }}>
+                      {alt.modal_sequence.join(' ➔ ')}
                     </td>
-                    <td style={{ padding: '6px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#888888' }}>
-                      {alt.waypoints.join(' → ')}
+                    <td style={{ padding: '6px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#22c55e' }}>
+                      {alt.blockchain_message?.start_node || alt.waypoints[0]}
+                    </td>
+                    <td style={{ padding: '6px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#38bdf8' }}>
+                      {alt.blockchain_message?.end_node || alt.waypoints[alt.waypoints.length - 1]}
                     </td>
                     <td style={{ padding: '6px 16px', color: '#ffffff' }}>
                       {alt.estimated_transit_hours}h
                     </td>
                     <td style={{ padding: '6px 16px', color: '#ffffff' }}>
                       ${alt.base_freight_cost_usd.toLocaleString()}
-                    </td>
-                    <td style={{ padding: '6px 16px', color: '#ffffff' }}>
-                      {alt.co2_emissions_kg} kg
                     </td>
                     <td style={{ padding: '6px 16px' }}>
                       <span className={`badge ${alt.risk_grade === 'LOW' ? 'badge-low' : alt.risk_grade === 'HIGH' ? 'badge-critical' : 'badge-medium'}`}>
@@ -312,7 +387,7 @@ export default function CommandCenterPage() {
                           setPenaltyAvoided(180000);
                         }}
                       >
-                        {isActive ? '✓ Active Route' : 'Select Route'}
+                        {isActive ? '✓ Selected Route' : 'Select Route'}
                       </button>
                     </td>
                   </tr>
@@ -323,7 +398,6 @@ export default function CommandCenterPage() {
         </div>
       </div>
 
-      {/* HITL Modal if triggered */}
       {hitlPending && <HITLModal />}
     </div>
   );

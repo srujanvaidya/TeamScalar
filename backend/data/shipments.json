@@ -23,11 +23,47 @@
         "co2_kg": 1850.0,
         "sla_risk": "HIGH"
       },
+      "blockchain_provenance": {
+        "tx_hash": "0x7f9a1b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a",
+        "block_number": 4829103,
+        "contract_address": "0xbe6E842E5CCD8752EF538B7874530F3bE702e8Ae",
+        "origin_point": "PORT_SHANGHAI_01 [31.2304, 121.4737]",
+        "destination_point": "PORT_ROTTERDAM_02 [51.9244, 4.4777]",
+        "verified_on_chain": true,
+        "timestamp": "2026-08-22T19:20:00Z"
+      },
+      "route_legs": [
+        {
+          "leg_id": "LEG_01",
+          "from_node": "HUB_SHANGHAI",
+          "from_type": "ROAD_HUB",
+          "to_node": "PORT_SHANGHAI_01",
+          "to_type": "OCEAN_PORT",
+          "mode": "ROAD_TRUCK",
+          "distance_km": 45.0,
+          "transit_hours": 3.5,
+          "coords": [[31.23, 121.47], [31.20, 121.49]]
+        },
+        {
+          "leg_id": "LEG_02",
+          "from_node": "PORT_SHANGHAI_01",
+          "from_type": "OCEAN_PORT",
+          "to_node": "PORT_ROTTERDAM_02",
+          "to_type": "OCEAN_PORT",
+          "mode": "OCEAN_FREIGHT",
+          "distance_km": 19500.0,
+          "transit_hours": 138.5,
+          "coords": [
+            [31.23, 121.47], [22.31, 114.16], [1.29, 103.85],
+            [26.6, 56.3], [12.5, 43.3], [29.9, 32.5], [51.9, 4.47]
+          ]
+        }
+      ],
       "alternate_routes": [
         {
           "route_id": "ROUTE_ALT_A",
-          "modal_sequence": ["ROAD_TRUCK", "RAIL_FREIGHT"],
-          "waypoints": ["HUB_SHANGHAI", "HUB_WARSAW", "DIST_BERLIN"],
+          "modal_sequence": ["ROAD_TRUCK", "RAIL_FREIGHT", "ROAD_TRUCK"],
+          "waypoints": ["HUB_SHANGHAI", "RAIL_CHENGDU", "HUB_WARSAW", "DIST_BERLIN"],
           "waypoint_coords": [
             [31.23, 121.47],
             [30.57, 104.07],
@@ -38,7 +74,20 @@
           "base_freight_cost_usd": 18450.00,
           "co2_emissions_kg": 1240.5,
           "risk_grade": "LOW",
-          "color_gradient": [56, 142, 60]
+          "color_gradient": [56, 142, 60],
+          "blockchain_message": {
+            "action": "PROPOSING_REROUTE_TRANSACTION",
+            "start_node": "HUB_SHANGHAI (Road Hub)",
+            "end_node": "DIST_BERLIN (Distribution Center)",
+            "leg_summary": "ROAD -> RAIL -> ROAD",
+            "tx_hash": "0x3a2b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b",
+            "verified_on_chain": true
+          },
+          "leg_breakdown": [
+            {"from": "HUB_SHANGHAI", "from_type": "ROAD", "to": "RAIL_CHENGDU", "to_type": "RAIL", "mode": "ROAD_TRUCK", "hours": 18.0},
+            {"from": "RAIL_CHENGDU", "from_type": "RAIL", "to": "HUB_WARSAW", "to_type": "HUB", "mode": "RAIL_FREIGHT", "hours": 84.5},
+            {"from": "HUB_WARSAW", "from_type": "HUB", "to": "DIST_BERLIN", "to_type": "DIST", "mode": "ROAD_TRUCK", "hours": 8.0}
+          ]
         },
         {
           "route_id": "ROUTE_ALT_B",
@@ -53,7 +102,19 @@
           "base_freight_cost_usd": 29100.00,
           "co2_emissions_kg": 3400.0,
           "risk_grade": "HIGH",
-          "color_gradient": [211, 47, 47]
+          "color_gradient": [211, 47, 47],
+          "blockchain_message": {
+            "action": "EXPRESS_AIR_REROUTE_CONTRACT",
+            "start_node": "PORT_SHANGHAI (Port)",
+            "end_node": "PORT_ROTTERDAM (Port)",
+            "leg_summary": "PORT -> AIRPORT -> PORT",
+            "tx_hash": "0x9d1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a",
+            "verified_on_chain": true
+          },
+          "leg_breakdown": [
+            {"from": "PORT_SHANGHAI", "from_type": "PORT", "to": "AIR_DUBAI", "to_type": "AIR", "mode": "MARITIME", "hours": 120.0},
+            {"from": "AIR_DUBAI", "from_type": "AIR", "to": "PORT_ROTTERDAM", "to_type": "PORT", "mode": "AIR_FREIGHT", "hours": 45.0}
+          ]
         }
       ]
     },
@@ -77,10 +138,32 @@
         "co2_kg": 980.0,
         "sla_risk": "LOW"
       },
+      "blockchain_provenance": {
+        "tx_hash": "0x8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f",
+        "block_number": 4828990,
+        "contract_address": "0x48B0DB4e87D280AFB3fDC572f61A641E7261D74D",
+        "origin_point": "PORT_SINGAPORE_01 [1.3521, 103.8198]",
+        "destination_point": "PORT_DUBAI_01 [25.2048, 55.2708]",
+        "verified_on_chain": true,
+        "timestamp": "2026-08-22T18:45:00Z"
+      },
+      "route_legs": [
+        {
+          "leg_id": "LEG_01",
+          "from_node": "PORT_SINGAPORE_01",
+          "from_type": "OCEAN_PORT",
+          "to_node": "PORT_DUBAI_01",
+          "to_type": "OCEAN_PORT",
+          "mode": "OCEAN_FREIGHT",
+          "distance_km": 6200.0,
+          "transit_hours": 72.0,
+          "coords": [[1.35, 103.82], [19.08, 72.88], [25.2, 55.27]]
+        }
+      ],
       "alternate_routes": [
         {
           "route_id": "ROUTE_ALT_C",
-          "modal_sequence": ["MARITIME"],
+          "modal_sequence": ["MARITIME", "ROAD_TRUCK"],
           "waypoints": ["PORT_SINGAPORE", "HUB_MUMBAI", "PORT_DUBAI"],
           "waypoint_coords": [
             [1.35, 103.82],
@@ -91,44 +174,19 @@
           "base_freight_cost_usd": 9200.00,
           "co2_emissions_kg": 850.0,
           "risk_grade": "LOW",
-          "color_gradient": [56, 142, 60]
-        }
-      ]
-    },
-    {
-      "cargo_id": "CONT-33109-LAX",
-      "mode": "MARITIME",
-      "vessel_name": "EVER GIVEN",
-      "origin": "PORT_BUSAN_01",
-      "destination": "PORT_LOSANGELES_01",
-      "current_status": "WEATHER_DELAY",
-      "current_coordinates": [35.1796, 129.0756],
-      "active_route_coords": [
-        [35.17, 129.07],
-        [35.0, 160.0],
-        [33.74, -118.27]
-      ],
-      "metrics": {
-        "transit_hours": 210.0,
-        "cost_usd": 19500.0,
-        "co2_kg": 2400.0,
-        "sla_risk": "MODERATE"
-      },
-      "alternate_routes": [
-        {
-          "route_id": "ROUTE_ALT_D",
-          "modal_sequence": ["MARITIME", "RAIL_FREIGHT"],
-          "waypoints": ["PORT_BUSAN", "PORT_VANCOUVER", "HUB_CHICAGO"],
-          "waypoint_coords": [
-            [35.17, 129.07],
-            [49.28, -123.12],
-            [41.88, -87.63]
-          ],
-          "estimated_transit_hours": 195.0,
-          "base_freight_cost_usd": 21200.00,
-          "co2_emissions_kg": 2100.0,
-          "risk_grade": "MODERATE",
-          "color_gradient": [245, 158, 11]
+          "color_gradient": [56, 142, 60],
+          "blockchain_message": {
+            "action": "PORT_TO_PORT_TRANSFER_ESCROW",
+            "start_node": "PORT_SINGAPORE (Port)",
+            "end_node": "PORT_DUBAI (Port)",
+            "leg_summary": "PORT -> HUB -> PORT",
+            "tx_hash": "0x5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d",
+            "verified_on_chain": true
+          },
+          "leg_breakdown": [
+            {"from": "PORT_SINGAPORE", "from_type": "PORT", "to": "HUB_MUMBAI", "to_type": "HUB", "mode": "MARITIME", "hours": 48.0},
+            {"from": "HUB_MUMBAI", "from_type": "HUB", "to": "PORT_DUBAI", "to_type": "PORT", "mode": "MARITIME", "hours": 20.0}
+          ]
         }
       ]
     }
