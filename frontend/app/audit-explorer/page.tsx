@@ -1,298 +1,435 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { useRouter } from 'next/navigation';
-import { supabase, BlockchainAudit } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
+import 'leaflet/dist/leaflet.css';
 
-const DEMO_AUDIT_LOGS: BlockchainAudit[] = [
-  {
-    id: '1',
-    tx_hash: '0x7f9a1b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a',
-    block_number: 4829103,
-    cargo_id: 'CARGO_2291',
-    action_type: 'REROUTE_APPROVED',
-    financial_impact_usd: 64200.00,
-    reasoning_markdown: `### Escalation Summary
-- Primary ocean route blocked at Port of Shanghai due to labor dispute.
-- Alternate rail path selected to meet 48-hour SLA window.
-- Total cost impact exceeds $50,000 threshold ($64,200 total).
-- Recommendation: Approve rail freight booking to prevent $180,000 OTIF breach penalty.`,
-    contract_address: '0xbe6E842E5CCD8752EF538B7874530F3bE702e8Ae',
-    created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-  },
-  {
-    id: '2',
-    tx_hash: '0x3a2b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b',
-    block_number: 4829012,
-    cargo_id: 'CARGO_1847',
-    action_type: 'TOKEN_MINTED',
-    financial_impact_usd: 0.00,
-    reasoning_markdown: `### Digital Cargo Twin Created
-- ERC-721/1155 token minted to represent cargo container twin.
-- Origin: PORT_SINGAPORE_01.
-- Initial temperature: 3.4°C.
-- Initial humidity: 62%.`,
-    contract_address: '0x48B0DB4e87D280AFB3fDC572f61A641E7261D74D',
-    created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-  },
-  {
-    id: '3',
-    tx_hash: '0x9d1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a',
-    block_number: 4828854,
-    cargo_id: 'CARGO_0392',
-    action_type: 'ESCROW_RELEASED',
-    financial_impact_usd: 18450.00,
-    reasoning_markdown: `### Escrow Released
-- Carrier settlement triggered upon cargo check-in receipt at Berlin Dist Hub.
-- Carrier on-time SLA fulfilled.
-- Escrow funds released to carrier wallet.`,
-    contract_address: '0xbe6E842E5CCD8752EF538B7874530F3bE702e8Ae',
-    created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-  },
-];
-
-const generateHeatCalendar = () => {
-  const data = [];
-  for (let i = 0; i < 371; i++) {
-    let weight = Math.random();
-    if (i % 7 === 0 || i % 15 === 0) weight = Math.random() * 0.9;
-    else if (i > 150 && i < 240) weight = Math.random() * 0.95;
-    else weight = Math.random() * 0.3;
-
-    data.push({
-      day: i,
-      value: weight > 0.85 ? 'critical' : weight > 0.6 ? 'high' : weight > 0.3 ? 'medium' : weight > 0.1 ? 'low' : 'empty'
-    });
-  }
-  return data;
+export type TimeSeriesEvent = {
+  id: string;
+  timestamp: string;
+  cargo_id: string;
+  vessel_name: string;
+  location: string;
+  coords: [number, number];
+  action_type: string;
+  tx_hash: string;
+  block_number: number;
+  financial_impact_usd: number;
+  reasoning: string;
+  path_so_far: [number, number][];
 };
 
+const DEMO_TIME_SERIES_JSON: TimeSeriesEvent[] = [
+  {
+    id: 'EVT-001',
+    timestamp: '2026-08-22T08:00:00Z',
+    cargo_id: 'CONT-8001',
+    vessel_name: 'MAERSK MC-KINNEY MOLLER',
+    location: 'Port of Los Angeles',
+    coords: [33.7426, -118.2673],
+    action_type: 'CARGO_TWIN_MINTED',
+    tx_hash: '0x913ac360d9d7f3238605f2b9fcbc31a2bf32a5e0f1eac420964ccc4588dcc36b',
+    block_number: 45612105,
+    financial_impact_usd: 0.00,
+    reasoning: 'Digital Cargo Twin Token minted at origin Port of Los Angeles.',
+    path_so_far: [[33.7426, -118.2673]]
+  },
+  {
+    id: 'EVT-002',
+    timestamp: '2026-08-22T14:30:00Z',
+    cargo_id: 'CONT-8001',
+    vessel_name: 'MAERSK MC-KINNEY MOLLER',
+    location: 'Panama Canal Approach',
+    coords: [9.0800, -79.6800],
+    action_type: 'BOTTLENECK_DETECTED',
+    tx_hash: '0x3a2b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b',
+    block_number: 45612107,
+    financial_impact_usd: 12500.00,
+    reasoning: 'Severe climate drought at Panama Canal Gatun Lake. 154-hour transit delay flagged.',
+    path_so_far: [[33.7426, -118.2673], [9.0800, -79.6800]]
+  },
+  {
+    id: 'EVT-003',
+    timestamp: '2026-08-22T18:00:00Z',
+    cargo_id: 'CONT-8001',
+    vessel_name: 'MAERSK MC-KINNEY MOLLER',
+    location: 'AIR_ATLANTA_01 Cargo Terminal',
+    coords: [33.7490, -84.3880],
+    action_type: 'AGENT2_REROUTE_APPROVED',
+    tx_hash: '0x7f9a1b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a',
+    block_number: 45612109,
+    financial_impact_usd: 28400.00,
+    reasoning: 'Agent 2 Express Air Bypass approved by human operator. Saves 153.5h transit time.',
+    path_so_far: [[33.7426, -118.2673], [9.0800, -79.6800], [33.7490, -84.3880]]
+  },
+  {
+    id: 'EVT-004',
+    timestamp: '2026-08-23T02:00:00Z',
+    cargo_id: 'CONT-8001',
+    vessel_name: 'MAERSK MC-KINNEY MOLLER',
+    location: 'Port of New York/New Jersey',
+    coords: [40.6681, -74.1610],
+    action_type: 'DELIVERY_CHECKIN_VERIFIED',
+    tx_hash: '0xbe6E842E5CCD8752EF538B7874530F3bE702e8Ae',
+    block_number: 45612115,
+    financial_impact_usd: 0.00,
+    reasoning: 'Container CONT-8001 delivered to final destination hub. Escrow released.',
+    path_so_far: [[33.7426, -118.2673], [9.0800, -79.6800], [33.7490, -84.3880], [40.6681, -74.1610]]
+  }
+];
+
 export default function AuditExplorerPage() {
-  const { role, auditLogs, setAuditLogs } = useStore();
+  const { role } = useStore();
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [heatData] = useState(generateHeatCalendar());
+
+  const [events, setEvents] = useState<TimeSeriesEvent[]>(DEMO_TIME_SERIES_JSON);
+  const [timeIndex, setTimeIndex] = useState<number>(DEMO_TIME_SERIES_JSON.length - 1);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [selectedCargoId, setSelectedCargoId] = useState('CONT-8001');
+
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const layerGroupRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!role) {
-      router.push('/');
-    }
+    if (!role) router.push('/');
   }, [role, router]);
 
+  // Fetch real on-chain events from Supabase or fallback
   useEffect(() => {
-    const fetchAudit = async () => {
-      setLoading(true);
+    const fetchEvents = async () => {
       try {
-        const { data } = await supabase
-          .from('blockchain_audit')
-          .select('*')
-          .order('created_at', { ascending: false });
-        setAuditLogs(data && data.length ? data : DEMO_AUDIT_LOGS);
-      } catch {
-        setAuditLogs(DEMO_AUDIT_LOGS);
+        const { data: dbEvents } = await supabase.from('container_events').select('*').order('timestamp', { ascending: true });
+
+        if (dbEvents && dbEvents.length > 0) {
+          let accumulatedPath: [number, number][] = [];
+          const mapped: TimeSeriesEvent[] = dbEvents.map((row: any, idx: number) => {
+            const locName = row.location || row.origin || 'Port of Los Angeles';
+            const coord: [number, number] = locName.includes('New York') ? [40.6681, -74.1610]
+              : locName.includes('Atlanta') ? [33.7490, -84.3880]
+              : locName.includes('Panama') ? [9.0800, -79.6800]
+              : [33.7426, -118.2673];
+
+            accumulatedPath.push(coord);
+
+            return {
+              id: row.id || `EVT-00${idx + 1}`,
+              timestamp: row.timestamp || row.created_at || new Date().toISOString(),
+              cargo_id: row.container_id || 'CONT-8001',
+              vessel_name: row.ship_id || 'MAERSK VESSEL',
+              location: locName,
+              coords: coord,
+              action_type: row.event_type || 'BLOCKCHAIN_EVENT',
+              tx_hash: row.polygon_tx_hash || row.event_hash || '0x913ac360d9d7f3238605f2b9fcbc31a2bf32a5e0f1eac420964ccc4588dcc36b',
+              block_number: 45612100 + idx,
+              financial_impact_usd: row.event_type?.includes('REROUTE') ? 28400.0 : 0.0,
+              reasoning: row.details || 'Blockchain anchored container telemetry event.',
+              path_so_far: [...accumulatedPath]
+            };
+          });
+
+          setEvents(mapped);
+          setTimeIndex(mapped.length - 1);
+        }
+      } catch (err) {
+        console.warn('Audit Explorer Supabase fetch notice:', err);
       }
-      setLoading(false);
     };
 
-    fetchAudit();
+    fetchEvents();
+  }, []);
 
-    const channel = supabase
-      .channel('blockchain_audit_changes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'blockchain_audit' }, (payload) => {
-        const newLog = payload.new as BlockchainAudit;
-        setAuditLogs([newLog, ...useStore.getState().auditLogs]);
-      })
-      .subscribe();
+  // Initialize Leaflet map inside Audit Explorer
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+    if (mapInstanceRef.current) return;
+
+    import('leaflet').then((L) => {
+      if (!mapContainerRef.current || mapInstanceRef.current) return;
+
+      const map = L.map(mapContainerRef.current, {
+        center: [25.0, -90.0],
+        zoom: 3,
+        zoomControl: false,
+        attributionControl: false,
+      });
+
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+      const layerGroup = L.layerGroup().addTo(map);
+      mapInstanceRef.current = map;
+      layerGroupRef.current = layerGroup;
+
+      renderTimeMap(L, map, layerGroup, events, timeIndex);
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+        layerGroupRef.current = null;
+      }
     };
   }, []);
 
-  const displayLogs = auditLogs.length ? auditLogs : DEMO_AUDIT_LOGS;
+  useEffect(() => {
+    if (!mapInstanceRef.current || !layerGroupRef.current) return;
+    import('leaflet').then((L) => {
+      renderTimeMap(L, mapInstanceRef.current, layerGroupRef.current, events, timeIndex);
+    });
+  }, [events, timeIndex]);
 
-  const toggleRow = (id: string) => {
-    setExpandedId(expandedId === id ? null : id);
-  };
-
-  const getHeatColor = (value: string) => {
-    switch (value) {
-      case 'critical': return '#ef4444';
-      case 'high': return '#f97316';
-      case 'medium': return '#888888';
-      case 'low': return '#ffffff';
-      default: return 'rgba(255, 255, 255, 0.05)';
+  // Handle Play/Pause Automatic Time Progression
+  useEffect(() => {
+    let interval: any;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setTimeIndex((prev) => {
+          if (prev >= events.length - 1) {
+            setIsPlaying(false);
+            return prev;
+          }
+          return prev + 1;
+        });
+      }, 2000);
     }
+    return () => clearInterval(interval);
+  }, [isPlaying, events.length]);
+
+  const currentEvent = events[timeIndex] || events[0];
+
+  const renderTimeMap = (L: any, map: any, layerGroup: any, evtList: TimeSeriesEvent[], index: number) => {
+    layerGroup.clearLayers();
+    if (!evtList || evtList.length === 0) return;
+
+    const activeEvt = evtList[index] || evtList[0];
+    const pathCoords = activeEvt.path_so_far || [];
+
+    // Draw completed historic polyline up to current selected timestamp
+    if (pathCoords.length > 1) {
+      L.polyline(pathCoords, {
+        color: '#22c55e',
+        weight: 5,
+        opacity: 0.9,
+      }).addTo(layerGroup);
+    }
+
+    // Render milestone transfer node circle markers
+    evtList.slice(0, index + 1).forEach((e, idx) => {
+      const isCurrent = idx === index;
+      const marker = L.circleMarker(e.coords, {
+        radius: isCurrent ? 9 : 6,
+        fillColor: isCurrent ? '#22c55e' : '#ffffff',
+        color: '#000000',
+        weight: 2,
+        fillOpacity: 1,
+      }).addTo(layerGroup);
+
+      marker.bindPopup(
+        `<div style="font-family: Inter, monospace; font-size: 11px; padding: 8px 12px; background: #000000; color: #ffffff; border: 1px solid #22c55e; border-radius: 6px;">
+          <div style="font-weight: 800; color: #22c55e;">[MILESTONE #${idx + 1}]: ${e.action_type}</div>
+          <div>Location: <strong>${e.location}</strong></div>
+          <div>Time: <strong>${new Date(e.timestamp).toUTCString()}</strong></div>
+          <div style="color: #888888; font-size: 10px; margin-top: 4px; border-top: 1px solid #222222; padding-top: 4px;">
+            Polygon Tx: ${e.tx_hash.slice(0, 16)}... (Block #${e.block_number})
+          </div>
+        </div>`
+      );
+    });
+
+    // Render Container Marker (lo.png) at Current Timestamp Coordinates
+    const containerIcon = L.icon({
+      iconUrl: '/lo.png',
+      iconSize: [36, 36],
+      iconAnchor: [18, 18],
+    });
+
+    L.marker(activeEvt.coords, { icon: containerIcon }).addTo(layerGroup).bindPopup(
+      `<div style="font-family: Inter, monospace; font-size: 11px; padding: 8px 12px; background: #000000; color: #ffffff; border: 1px solid #ffffff; border-radius: 6px;">
+        <div style="font-weight: 800; color: #22c55e;">[CONTAINER POSITION AT SELECTED TIMESTAMP]</div>
+        <div>Cargo ID: <strong>${activeEvt.cargo_id}</strong></div>
+        <div>Location: <strong>${activeEvt.location}</strong></div>
+        <div style="color: #aaaaaa; font-size: 10px;">Time: ${new Date(activeEvt.timestamp).toUTCString()}</div>
+      </div>`
+    );
+
+    // Pan map to current event coordinates smoothly
+    try {
+      map.panTo(activeEvt.coords, { animate: true, duration: 1.0 });
+    } catch {}
   };
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#000000', overflow: 'hidden' }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#000000', color: '#ffffff', overflow: 'hidden' }}>
+      
+      {/* Top Monochromatic Header */}
       <header style={{
-        height: 48, display: 'flex', alignItems: 'center', padding: '0 20px',
-        borderBottom: '1px solid #1a1a1a', background: '#000000',
-        gap: 12, flexShrink: 0,
+        height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 24px', borderBottom: '1px solid #1a1a1a', background: '#000000', flexShrink: 0,
+        fontSize: 12, fontFamily: 'Inter, sans-serif'
       }}>
-        <span style={{ fontWeight: 800, fontSize: 13, color: '#ffffff', letterSpacing: '0.06em' }}>AUDIT EXPLORER</span>
-        <span style={{ color: '#333333' }}>|</span>
-        <span style={{ fontSize: 11, color: '#888888' }}>BLOCKCHAIN COMPLIANCE LEDGER</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <span style={{ fontWeight: 800, color: '#ffffff', letterSpacing: '0.06em', fontSize: 13 }}>AUDIT EXPLORER</span>
+          <span style={{ color: '#333333' }}>|</span>
+          <span style={{ color: '#888888', fontSize: 11 }}>BLOCKCHAIN CONTAINER TIME-TRAVEL PATH MAPPER</span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ color: '#888888', fontSize: 11, fontWeight: 600 }}>CARGO CONTAINER:</span>
+          <select
+            value={selectedCargoId}
+            onChange={(e) => setSelectedCargoId(e.target.value)}
+            style={{
+              background: '#0a0a0a', color: '#ffffff', border: '1px solid #262626',
+              borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700, outline: 'none'
+            }}
+          >
+            <option value="CONT-8001">CONT-8001 (Port of LA ➔ Port of NY)</option>
+          </select>
+        </div>
       </header>
 
+      {/* Main split view: Left Timeline Table | Right Live Map View */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid #1a1a1a' }}>
+        
+        {/* Left Side: On-Chain Event History Timeline Table */}
+        <div style={{ width: 480, display: 'flex', flexDirection: 'column', borderRight: '1px solid #1f1f1f', background: '#050505' }}>
           <div style={{ padding: '14px 20px', borderBottom: '1px solid #1f1f1f', background: '#0a0a0a' }}>
-            <div style={{ fontWeight: 700, fontSize: 13, color: '#ffffff' }}>Live On-Chain Immutable Ledger</div>
-            <div style={{ fontSize: 11, color: '#888888', marginTop: 2 }}>Verifiable records of route approvals, container twin creations, and escrows</div>
+            <div style={{ fontWeight: 800, fontSize: 13, color: '#ffffff' }}>Polygon Amoy On-Chain Audit Log</div>
+            <div style={{ fontSize: 11, color: '#888888', marginTop: 2 }}>Click any event milestone to map container location at that exact timestamp</div>
           </div>
 
-          <div className="scroll-y" style={{ flex: 1 }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid #1f1f1f', background: '#000000', position: 'sticky', top: 0, zIndex: 10 }}>
-                  <th style={{ padding: '8px 16px', textAlign: 'left', color: '#888888', fontSize: 10, fontWeight: 600 }}>TIMESTAMP</th>
-                  <th style={{ padding: '8px 16px', textAlign: 'left', color: '#888888', fontSize: 10, fontWeight: 600 }}>CARGO ID</th>
-                  <th style={{ padding: '8px 16px', textAlign: 'left', color: '#888888', fontSize: 10, fontWeight: 600 }}>ACTION TYPE</th>
-                  <th style={{ padding: '8px 16px', textAlign: 'left', color: '#888888', fontSize: 10, fontWeight: 600 }}>FINANCIAL IMPACT</th>
-                  <th style={{ padding: '8px 16px', textAlign: 'left', color: '#888888', fontSize: 10, fontWeight: 600 }}>TX HASH</th>
-                  <th style={{ padding: '8px 16px', textAlign: 'left', color: '#888888', fontSize: 10, fontWeight: 600 }}>STATUS</th>
-                  <th style={{ padding: '8px 16px', textAlign: 'left', color: '#888888', fontSize: 10, fontWeight: 600 }}>DETAILS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {displayLogs.map((log) => {
-                  const isExpanded = expandedId === log.id;
-                  return (
-                    <tr key={log.id} style={{ borderBottom: '1px solid #111111' }}>
-                      <td style={{ padding: '12px 16px', color: '#ffffff', fontFamily: 'JetBrains Mono, monospace' }}>
-                        {new Date(log.created_at).toLocaleTimeString()}
-                      </td>
-                      <td style={{ padding: '12px 16px', fontWeight: 700, color: '#ffffff' }}>{log.cargo_id}</td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <span className={`badge ${log.action_type.includes('APPROVED') ? 'badge-low' : log.action_type.includes('MINTED') ? 'badge-neutral' : 'badge-info'}`}>
-                          {log.action_type}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 16px', color: log.financial_impact_usd > 0 ? '#ef4444' : '#888888', fontFamily: 'JetBrains Mono, monospace' }}>
-                        {log.financial_impact_usd > 0 ? `$${log.financial_impact_usd.toLocaleString()}` : '—'}
-                      </td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <a
-                          href={`https://polygonscan.com/tx/${log.tx_hash}`}
-                          target="_blank" rel="noopener noreferrer"
-                          style={{ color: '#ffffff', textDecoration: 'none', fontFamily: 'JetBrains Mono, monospace', fontSize: 11 }}
-                        >
-                          {log.tx_hash.slice(0, 14)}...
-                        </a>
-                      </td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <span style={{ color: '#ffffff', fontWeight: 700, fontSize: 11 }}>VERIFIED ON-CHAIN</span>
-                      </td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                        <button
-                          onClick={() => toggleRow(log.id)}
-                          style={{ background: '#0a0a0a', border: '1px solid #333333', color: '#ffffff', padding: '4px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
-                        >
-                          {isExpanded ? 'Hide' : 'View'}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+          <div className="scroll-y" style={{ flex: 1, overflowY: 'auto' }}>
+            {events.map((evt, idx) => {
+              const isSelected = idx === timeIndex;
+              return (
+                <div
+                  key={evt.id}
+                  onClick={() => {
+                    setTimeIndex(idx);
+                    setIsPlaying(false);
+                  }}
+                  style={{
+                    padding: '16px 20px', borderBottom: '1px solid #141414',
+                    background: isSelected ? '#0f0f0f' : '#050505',
+                    cursor: 'pointer', borderLeft: isSelected ? '3px solid #22c55e' : '3px solid transparent'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 10, fontWeight: 800, color: '#22c55e', letterSpacing: '0.05em' }}>
+                      MILESTONE #{idx + 1} — [{evt.action_type}]
+                    </span>
+                    <span style={{ fontSize: 10, color: '#888888', fontFamily: 'JetBrains Mono, monospace' }}>
+                      Block #{evt.block_number}
+                    </span>
+                  </div>
 
-        <div style={{ width: 320, background: '#000000', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div style={{ padding: 16, borderBottom: '1px solid #1f1f1f', background: '#0a0a0a' }}>
-            <div style={{ fontWeight: 700, fontSize: 13, color: '#ffffff' }}>
-              Smart Contract Status
-            </div>
-          </div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#ffffff', marginBottom: 4 }}>
+                    {evt.location}
+                  </div>
 
-          <div style={{ flex: 1, padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ background: '#0a0a0a', borderRadius: 8, border: '1px solid #222222', padding: 16 }}>
-              <div style={{ fontWeight: 700, fontSize: 13, color: '#ffffff', marginBottom: 4 }}>Container Twin Token</div>
-              <div style={{ fontSize: 11, color: '#888888', marginBottom: 12, fontFamily: 'JetBrains Mono, monospace' }}>
-                0x48B0DB4e87D280AFB3fDC572f61A641E7261D74D
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ fontSize: 11, color: '#888888' }}>Total Twin Tokens Minted</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#ffffff' }}>2,847</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 11, color: '#888888' }}>Active Cargo Twins</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#ffffff' }}>341</span>
-              </div>
-            </div>
+                  <div style={{ fontSize: 11, color: '#aaaaaa', lineHeight: 1.4, marginBottom: 8 }}>
+                    {evt.reasoning}
+                  </div>
 
-            <div style={{ background: '#0a0a0a', borderRadius: 8, border: '1px solid #222222', padding: 16 }}>
-              <div style={{ fontWeight: 700, fontSize: 13, color: '#ffffff', marginBottom: 4 }}>Carrier Escrow Contract</div>
-              <div style={{ fontSize: 11, color: '#888888', marginBottom: 12, fontFamily: 'JetBrains Mono, monospace' }}>
-                0xbe6E842E5CCD8752EF538B7874530F3bE702e8Ae
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ fontSize: 11, color: '#888888' }}>Total Settled Escrows</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#ffffff' }}>$1,248,500</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 11, color: '#888888' }}>Pending Escrows</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#888888' }}>$127,400</span>
-              </div>
-            </div>
-
-            <div style={{ background: '#0a0a0a', borderRadius: 8, border: '1px solid #222222', padding: 16 }}>
-              <div style={{ fontWeight: 700, fontSize: 13, color: '#ffffff', marginBottom: 10 }}>SLA Compliance Rate</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                <div style={{ fontSize: 26, fontWeight: 800, color: '#ffffff' }}>96.4%</div>
-                <div style={{ fontSize: 11, color: '#888888', lineHeight: 1.3 }}>
-                  Average carrier on-time rate across all reroutes
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 10, color: '#666666', fontFamily: 'JetBrains Mono, monospace' }}>
+                    <span>TIME: {new Date(evt.timestamp).toUTCString()}</span>
+                    <a
+                      href={`https://amoy.polygonscan.com/tx/${evt.tx_hash}`}
+                      target="_blank" rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ color: '#ffffff', textDecoration: 'underline' }}
+                    >
+                      TX: {evt.tx_hash.slice(0, 10)}...
+                    </a>
+                  </div>
                 </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right Side: Leaflet Interactive Map View */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', background: '#000000' }}>
+          
+          {/* Top Floating Telemetry Overlay Card */}
+          <div style={{
+            position: 'absolute', top: 16, left: 16, zIndex: 30,
+            background: 'rgba(5, 5, 5, 0.92)', backdropFilter: 'blur(10px)',
+            border: '1px solid #222222', borderRadius: 8, padding: '12px 18px',
+            fontSize: 11, fontFamily: 'Inter, sans-serif', maxWidth: 420
+          }}>
+            <div style={{ fontSize: 10, color: '#888888', fontWeight: 700, letterSpacing: '0.05em' }}>
+              TIME-MAPPER ACTIVE CONTAINER SNAPSHOT
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: '#ffffff', marginTop: 2 }}>
+              {currentEvent.location}
+            </div>
+            <div style={{ fontSize: 11, color: '#22c55e', fontWeight: 700, marginTop: 4 }}>
+              Status: [{currentEvent.action_type}]
+            </div>
+            <div style={{ fontSize: 10, color: '#888888', marginTop: 4, fontFamily: 'JetBrains Mono, monospace' }}>
+              Timestamp: {new Date(currentEvent.timestamp).toUTCString()}
+            </div>
+          </div>
+
+          {/* Leaflet Map Canvas */}
+          <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
+
+          {/* Bottom Interactive Time-Travel Slider Toolbar */}
+          <div style={{
+            height: 72, background: '#050505', borderTop: '1px solid #1f1f1f',
+            padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 20, flexShrink: 0
+          }}>
+            <button
+              onClick={() => setIsPlaying(!isPlaying)}
+              style={{
+                background: isPlaying ? '#ef4444' : '#ffffff',
+                color: isPlaying ? '#ffffff' : '#000000',
+                border: 'none', borderRadius: 20, padding: '8px 20px',
+                fontWeight: 800, fontSize: 11, cursor: 'pointer', minWidth: 120
+              }}
+            >
+              {isPlaying ? '⏸ Pause' : '▶ Play Progression'}
+            </button>
+
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#888888', fontWeight: 700 }}>
+                <span>SLIDER TIMELINE PROGRESSION</span>
+                <span style={{ color: '#ffffff' }}>
+                  Step {timeIndex + 1} of {events.length}: {currentEvent.location} ({new Date(currentEvent.timestamp).toLocaleTimeString()})
+                </span>
               </div>
-              <div style={{ height: 4, background: '#222222', borderRadius: 2 }}>
-                <div style={{ height: '100%', width: '96.4%', background: '#ffffff', borderRadius: 2 }} />
-              </div>
+              <input
+                type="range"
+                min={0}
+                max={events.length - 1}
+                value={timeIndex}
+                onChange={(e) => {
+                  setTimeIndex(Number(e.target.value));
+                  setIsPlaying(false);
+                }}
+                style={{ width: '100%', accentColor: '#22c55e', cursor: 'pointer' }}
+              />
             </div>
           </div>
         </div>
       </div>
 
-      <div style={{ height: 160, borderTop: '1px solid #1a1a1a', background: '#000000', flexShrink: 0, padding: '12px 16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-          <span style={{ fontWeight: 700, fontSize: 12, color: '#ffffff' }}>Disruption Heat Calendar</span>
-          <span style={{ fontSize: 11, color: '#888888' }}>Historical daily disruption index (last 365 days)</span>
-
-          <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
-            {['low', 'medium', 'high', 'critical'].map(lvl => (
-              <div key={lvl} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <div style={{ width: 8, height: 8, borderRadius: 2, background: getHeatColor(lvl) }} />
-                <span style={{ fontSize: 9, color: '#888888' }}>{lvl}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{
-          display: 'grid',
-          gridAutoFlow: 'column',
-          gridTemplateColumns: 'repeat(53, 1fr)',
-          gridTemplateRows: 'repeat(7, 1fr)',
-          gap: 2,
-          height: 'calc(100% - 28px)',
-        }}>
-          {heatData.map((d, index) => (
-            <div
-              key={index}
-              style={{
-                background: getHeatColor(d.value),
-                borderRadius: 1.5,
-              }}
-              title={`Day ${d.day}: ${d.value} severity`}
-            />
-          ))}
-        </div>
-      </div>
+      <style jsx global>{`
+        .leaflet-container {
+          background: #000000 !important;
+          font-family: inherit;
+        }
+        .leaflet-tile-pane {
+          filter: grayscale(100%) invert(100%) contrast(120%) !important;
+        }
+        .leaflet-control-attribution {
+          display: none !important;
+        }
+      `}</style>
     </div>
   );
 }

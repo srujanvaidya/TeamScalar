@@ -396,25 +396,49 @@ export default function CommandCenterPage() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#000000', color: '#ffffff', overflowY: 'auto' }}>
-      {/* Sticky Monochromatic Top Header */}
+      
+      {/* Sleek Un-Cluttered Sticky Monochromatic Header */}
       <header style={{
         height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 24px', borderBottom: '1px solid #1a1a1a',
         background: '#000000', position: 'sticky', top: 0, zIndex: 100, fontSize: 12, fontFamily: 'Inter, sans-serif'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <span style={{ fontWeight: 800, color: '#ffffff', letterSpacing: '0.06em', fontSize: 13 }}>COMMAND CENTER</span>
-          <span style={{ color: '#333333' }}>|</span>
-          <span style={{ color: '#888888', fontSize: 11 }}>REAL-TIME MULTIMODAL TELEMETRY</span>
+          
+          {/* Ship & Cargo Container Selector Dropdown */}
+          {shipments.length > 0 && (
+            <select
+              value={selectedCargoId}
+              onChange={(e) => {
+                const newCargoId = e.target.value;
+                setSelectedCargoId(newCargoId);
+                setApprovedRouteId(null);
+                const s = shipments.find(item => item.cargo_id === newCargoId);
+                if (s && s.alternate_routes?.length) {
+                  setActiveAltRouteId(s.alternate_routes[0].route_id);
+                }
+              }}
+              style={{
+                background: '#0a0a0a', color: '#ffffff', border: '1px solid #262626',
+                borderRadius: 20, padding: '5px 14px', fontSize: 11, fontWeight: 700, outline: 'none', cursor: 'pointer'
+              }}
+            >
+              {shipments.map(s => (
+                <option key={s.cargo_id} value={s.cargo_id}>
+                  {s.vessel_name} (Container: {s.cargo_id})
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {/* Multi-Agent DAG Funnel Inspector Button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button
             onClick={() => setFunnelOpen(true)}
             style={{
               background: '#ffffff', color: '#000000', border: 'none',
-              borderRadius: 4, padding: '6px 14px', fontSize: 11,
+              borderRadius: 20, padding: '5px 14px', fontSize: 11,
               fontWeight: 800, cursor: 'pointer'
             }}
           >
@@ -424,85 +448,35 @@ export default function CommandCenterPage() {
           <button
             onClick={fetchBackendShipments}
             style={{
-              background: '#111111', border: '1px solid #333333',
-              color: '#ffffff', borderRadius: 4, padding: '6px 14px', fontSize: 11,
+              background: '#0a0a0a', border: '1px solid #262626',
+              color: '#888888', borderRadius: 20, padding: '5px 12px', fontSize: 11,
               fontWeight: 600, cursor: 'pointer'
             }}
           >
-            Sync Backend & Agent Routes
+            Sync Telemetry
           </button>
-
-          {/* Ship & Cargo Container Selector Dropdown */}
-          {shipments.length > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: '#888888', fontSize: 11, fontWeight: 600 }}>SELECT SHIP / CONTAINER:</span>
-              <select
-                value={selectedCargoId}
-                onChange={(e) => {
-                  const newCargoId = e.target.value;
-                  setSelectedCargoId(newCargoId);
-                  setApprovedRouteId(null);
-                  const s = shipments.find(item => item.cargo_id === newCargoId);
-                  if (s && s.alternate_routes?.length) {
-                    setActiveAltRouteId(s.alternate_routes[0].route_id);
-                  }
-                }}
-                style={{
-                  background: '#111111', color: '#ffffff', border: '1px solid #333333',
-                  borderRadius: 4, padding: '6px 14px', fontSize: 12, fontWeight: 700, outline: 'none', cursor: 'pointer'
-                }}
-              >
-                {shipments.map(s => (
-                  <option key={s.cargo_id} value={s.cargo_id}>
-                    {s.vessel_name} — Container: {s.cargo_id} ({s.origin} ➔ {s.destination})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
         </div>
       </header>
 
       {/* Spacious 520px Leaflet Map Section */}
       <div style={{ height: 520, position: 'relative', background: '#000000', borderBottom: '1px solid #1a1a1a' }}>
+        
+        {/* Compact 1-Line Floating Provenance Telemetry Bar */}
         {selectedShipment?.blockchain_provenance && (
           <div style={{
-            position: 'absolute', top: 20, left: 24, zIndex: 30, maxWidth: 460,
-            background: 'rgba(0, 0, 0, 0.95)', backdropFilter: 'blur(12px)',
-            border: '1px solid #333333', borderRadius: 8, padding: '14px 18px',
-            fontSize: 11, fontFamily: 'Inter, sans-serif', boxShadow: '0 16px 40px rgba(0,0,0,0.9)'
+            position: 'absolute', top: 16, left: 16, zIndex: 30,
+            background: 'rgba(5, 5, 5, 0.9)', backdropFilter: 'blur(10px)',
+            border: '1px solid #222222', borderRadius: 20, padding: '6px 16px',
+            fontSize: 10, fontFamily: 'Inter, sans-serif', color: '#ffffff',
+            display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 8px 32px rgba(0,0,0,0.8)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ color: '#ffffff', fontWeight: 800, letterSpacing: '0.05em' }}>AGENT 2 OPTIMIZED PATHFINDING</span>
-              <span style={{ color: '#888888', fontSize: 10 }}>Block #{selectedShipment.blockchain_provenance.block_number}</span>
-            </div>
-
-            <div style={{ color: '#888888', marginBottom: 6, fontFamily: 'JetBrains Mono, monospace', fontSize: 10 }}>
-              TX HASH: <span style={{ color: '#ffffff' }}>{selectedShipment.blockchain_provenance.tx_hash}</span>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8, paddingTop: 8, borderTop: '1px solid #222222' }}>
-              <div>
-                <span style={{ color: '#888888' }}>SELECTED SHIP: </span>
-                <span style={{ color: '#ffffff', fontWeight: 700 }}>{selectedShipment.vessel_name}</span>
-              </div>
-              <div>
-                <span style={{ color: '#888888' }}>CONTAINER: </span>
-                <span style={{ color: '#ffffff', fontWeight: 700 }}>{selectedShipment.cargo_id}</span>
-              </div>
-              <div>
-                <span style={{ color: '#888888' }}>AGENT OPTIMIZED ROUTE: </span>
-                <span style={{ color: '#ffffff', fontWeight: 700 }}>
-                  {selectedAltRoute ? selectedAltRoute.waypoints.join(' ➔ ') : `${selectedShipment.origin} ➔ ${selectedShipment.destination}`}
-                </span>
-              </div>
-              <div>
-                <span style={{ color: '#888888' }}>ESTIMATED SAVINGS: </span>
-                <span style={{ color: '#ffffff', fontWeight: 700 }}>
-                  {selectedAltRoute ? `Saves ${Math.round(selectedShipment.metrics.transit_hours - selectedAltRoute.estimated_transit_hours)}h (${selectedAltRoute.estimated_transit_hours}h total)` : '120h avoided'}
-                </span>
-              </div>
-            </div>
+            <div><span style={{ color: '#888888' }}>SHIP:</span> <strong>{selectedShipment.vessel_name}</strong></div>
+            <div style={{ width: 1, height: 12, background: '#222222' }} />
+            <div><span style={{ color: '#888888' }}>CONTAINER:</span> <strong>{selectedShipment.cargo_id}</strong></div>
+            <div style={{ width: 1, height: 12, background: '#222222' }} />
+            <div><span style={{ color: '#888888' }}>OPTIMIZED PATH:</span> <strong style={{ color: '#22c55e' }}>{selectedAltRoute ? selectedAltRoute.waypoints.join(' ➔ ') : `${selectedShipment.origin} ➔ ${selectedShipment.destination}`}</strong></div>
+            <div style={{ width: 1, height: 12, background: '#222222' }} />
+            <div><span style={{ color: '#888888' }}>POLYGON TX:</span> <strong style={{ color: '#ffffff', fontFamily: 'JetBrains Mono, monospace' }}>{selectedShipment.blockchain_provenance.tx_hash.slice(0, 14)}...</strong></div>
           </div>
         )}
 
