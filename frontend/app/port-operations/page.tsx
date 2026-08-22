@@ -81,9 +81,9 @@ export default function PortOperationsPage() {
   };
 
   const tierConfig: Record<string, { color: string; icon: string }> = {
-    Premium: { color: '#22c55e', icon: '⭐' },
-    Standard: { color: '#60a5fa', icon: '✅' },
-    Watchlist: { color: '#eab308', icon: '⚠️' },
+    Premium: { color: '#22c55e', icon: 'PREMIUM' },
+    Standard: { color: '#60a5fa', icon: 'STANDARD' },
+    Watchlist: { color: '#eab308', icon: 'WATCHLIST' },
   };
 
   return (

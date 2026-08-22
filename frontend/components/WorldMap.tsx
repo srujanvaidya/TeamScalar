@@ -77,12 +77,21 @@ type Props = {
   height: number;
 };
 
-const MODE_ICONS: Record<string, string> = {
-  ROAD_TRUCK: '🚚 ROAD TRUCK',
-  MARITIME: '🚢 OCEAN FREIGHT',
-  OCEAN_FREIGHT: '🚢 OCEAN FREIGHT',
-  RAIL_FREIGHT: '🚆 RAIL FREIGHT',
-  AIR_FREIGHT: '✈️ AIR FREIGHT',
+// Transport mode per-km freight cost rates & clean professional text labels (NO EMOJIS)
+const MODE_TEXT: Record<string, string> = {
+  ROAD_TRUCK: '[ROAD TRUCK]',
+  MARITIME: '[OCEAN FREIGHT]',
+  OCEAN_FREIGHT: '[OCEAN FREIGHT]',
+  RAIL_FREIGHT: '[RAIL FREIGHT]',
+  AIR_FREIGHT: '[AIR CARGO]',
+};
+
+const MODE_RATES: Record<string, string> = {
+  ROAD_TRUCK: '$2.80 / km',
+  MARITIME: '$0.65 / km',
+  OCEAN_FREIGHT: '$0.65 / km',
+  RAIL_FREIGHT: '$1.25 / km',
+  AIR_FREIGHT: '$8.50 / km',
 };
 
 export default function WorldMap({
@@ -154,7 +163,7 @@ export default function WorldMap({
     const [curLat, curLon] = shipment.current_coordinates;
     const bounds = L.latLngBounds();
 
-    // 1. Draw Normal / Default Route Polyline (Shows Cost of Normal Route on Hover)
+    // 1. Draw Normal / Default Route Polyline (Shows Cost of Normal Route & Ocean per-km rate on Hover)
     const activeCoords = shipment.active_route_coords.map(([lat, lon]) => [lat, lon] as [number, number]);
     if (activeCoords.length > 1) {
       const activePolyline = L.polyline(activeCoords, {
@@ -163,13 +172,14 @@ export default function WorldMap({
         opacity: 0.85,
       }).addTo(layerGroup);
 
-      const modeLabel = MODE_ICONS[shipment.mode] || `🚢 ${shipment.mode}`;
+      const modeLabel = MODE_TEXT[shipment.mode] || `[${shipment.mode}]`;
+      const modeRate = MODE_RATES[shipment.mode] || '$0.65 / km';
       const normalCostFormatted = `$${shipment.metrics.cost_usd.toLocaleString()}`;
 
       activePolyline.bindTooltip(
-        `<div style="font-family: Inter, monospace; font-size: 11px; padding: 8px 12px; background: #000000; color: #ffffff; border: 1px solid #ef4444; border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.9);">
-          <div style="font-weight: 800; color: #ef4444; margin-bottom: 4px; letter-spacing: 0.05em;">⚠️ NORMAL / DEFAULT ROUTE (${shipment.current_status})</div>
-          <div style="margin-bottom: 2px;">Mode: <strong>${modeLabel}</strong></div>
+        `<div style="font-family: Inter, monospace; font-size: 11px; padding: 10px 14px; background: #000000; color: #ffffff; border: 1px solid #ef4444; border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.9);">
+          <div style="font-weight: 800; color: #ef4444; margin-bottom: 4px; letter-spacing: 0.05em;">[NORMAL ROUTE - BOTTLENECK AFFECTED]</div>
+          <div style="margin-bottom: 2px;">Mode: <strong>${modeLabel}</strong> (${modeRate})</div>
           <div>Path: <strong>${shipment.origin}</strong> ➔ <strong>${shipment.destination}</strong></div>
           <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #222222; color: #cccccc;">
             Cost of Normal Route: <strong style="color: #ef4444; font-size: 13px;">${normalCostFormatted}</strong>
@@ -183,7 +193,7 @@ export default function WorldMap({
       activeCoords.forEach(c => bounds.extend(c));
     }
 
-    // 2. Draw Agent 2 / 3 Optimized Alternate Route Polyline (Shows Cost of Optimized Route / Road on Hover)
+    // 2. Draw Agent 2 / 3 Optimized Alternate Route Polyline (Shows Cost of Optimized Route & per-km rate breakdown on Hover)
     if (altRouteId && shipment.alternate_routes) {
       const alt = shipment.alternate_routes.find((r) => r.route_id === altRouteId) || shipment.alternate_routes[0];
       if (alt && alt.waypoint_coords && alt.waypoint_coords.length > 1) {
@@ -198,16 +208,19 @@ export default function WorldMap({
 
         altCoords.forEach(c => bounds.extend(c));
 
-        const seqText = alt.modal_sequence.map(m => MODE_ICONS[m] || m).join(' ➔ ');
+        const seqText = alt.modal_sequence.map(m => MODE_TEXT[m] || `[${m}]`).join(' ➔ ');
         const optCostFormatted = `$${alt.base_freight_cost_usd.toLocaleString()}`;
         const timeSavings = Math.round(shipment.metrics.transit_hours - alt.estimated_transit_hours);
 
-        // Hover tooltip over Agent-Optimized Path showing exact Cost of Optimized Route
+        // Hover tooltip over Agent-Optimized Path showing exact Cost of Optimized Route & per-km transport rates
         altPolyline.bindTooltip(
-          `<div style="font-family: Inter, monospace; font-size: 11px; padding: 8px 12px; background: #000000; color: #ffffff; border: 1px solid #ffffff; border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.9);">
-            <div style="font-weight: 800; color: #22c55e; margin-bottom: 4px; letter-spacing: 0.05em;">🚀 AGENT OPTIMIZED ROAD / MULTIMODAL ROUTE</div>
+          `<div style="font-family: Inter, monospace; font-size: 11px; padding: 10px 14px; background: #000000; color: #ffffff; border: 1px solid #ffffff; border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.9);">
+            <div style="font-weight: 800; color: #22c55e; margin-bottom: 4px; letter-spacing: 0.05em;">[AGENT OPTIMIZED ROAD / MULTIMODAL ROUTE]</div>
             <div style="margin-bottom: 2px;">Route ID: <strong>${alt.route_id}</strong></div>
             <div>Modal Chain: <strong>${seqText}</strong></div>
+            <div style="margin-top: 4px; color: #888888; font-size: 10px;">
+              Per-KM Rates: Ocean ($0.65/km) | Rail ($1.25/km) | Road ($2.80/km) | Air ($8.50/km)
+            </div>
             <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #222222; color: #cccccc;">
               Cost of Optimized Route: <strong style="color: #22c55e; font-size: 13px;">${optCostFormatted}</strong>
             </div>
@@ -216,13 +229,13 @@ export default function WorldMap({
               ${timeSavings > 0 ? `<span style="color: #22c55e; margin-left: 6px;">(Saves ${timeSavings}h!)</span>` : ''}
             </div>
             <div style="color: #ffffff; font-size: 9px; margin-top: 4px; font-weight: 700;">
-              ⛓️ POLYGON PROVENANCE: VERIFIED ON-CHAIN
+              POLYGON PROVENANCE: VERIFIED ON-CHAIN
             </div>
           </div>`,
           { sticky: true }
         );
 
-        // Draw Waypoint Leg Transfer Nodes on Map with individual Node & Mode cost details
+        // Draw Waypoint Leg Transfer Nodes on Map with clean professional labels (NO EMOJIS)
         alt.waypoint_coords.forEach((coord, idx) => {
           const nodeName = alt.waypoints[idx] || `Node ${idx + 1}`;
           const isOrigin = idx === 0;
@@ -239,9 +252,9 @@ export default function WorldMap({
           }).addTo(layerGroup);
 
           waypointMarker.bindTooltip(
-            `<div style="font-family: monospace; font-size: 10px; padding: 4px 8px; background: #000; color: #fff; border: 1px solid #333; border-radius: 4px;">
-              ${isOrigin ? '🏁 ORIGIN NODE: ' : isDest ? '🎯 DESTINATION NODE: ' : '📍 INTERMODAL TRANSFER HUB: '} <strong>${nodeName}</strong><br/>
-              <span style="color: #888888;">Transport Mode: ${MODE_ICONS[modeType] || modeType}</span>
+            `<div style="font-family: monospace; font-size: 10px; padding: 4px 8px; background: #000000; color: #ffffff; border: 1px solid #333333; border-radius: 4px;">
+              ${isOrigin ? '[ORIGIN NODE]: ' : isDest ? '[DESTINATION NODE]: ' : '[TRANSFER HUB]: '} <strong>${nodeName}</strong><br/>
+              <span style="color: #888888;">Mode: ${MODE_TEXT[modeType] || modeType} (${MODE_RATES[modeType] || '$2.80 / km'})</span>
             </div>`,
             { permanent: false, direction: 'top' }
           );
@@ -249,7 +262,7 @@ export default function WorldMap({
       }
     }
 
-    // 3. Draw Vehicle Circle Marker
+    // 3. Draw Vehicle Circle Marker (NO EMOJIS)
     const vehicleMarker = L.circleMarker([curLat, curLon], {
       radius: 9,
       fillColor: isBlocked ? '#ef4444' : '#ffffff',
@@ -261,12 +274,12 @@ export default function WorldMap({
 
     bounds.extend([curLat, curLon]);
 
-    // Popup Tooltip on Ship Vehicle Marker
+    // Popup Tooltip on Ship Vehicle Marker (NO EMOJIS)
     vehicleMarker.bindTooltip(
       `<div style="font-family: monospace; font-size: 11px; padding: 6px 10px; background: #000000; color: #ffffff; border: 1px solid #333333; border-radius: 4px;">
         <strong>${shipment.vessel_name}</strong> (${shipment.cargo_id})<br/>
-        Status: <span style="color: ${isBlocked ? '#ef4444' : '#22c55e'}; font-weight: 700;">${shipment.current_status}</span><br/>
-        <span style="color: #aaaaaa; font-size: 10px;">Normal Cost: $${shipment.metrics.cost_usd.toLocaleString()}</span>
+        Status: <span style="color: ${isBlocked ? '#ef4444' : '#22c55e'}; font-weight: 700;">[${shipment.current_status}]</span><br/>
+        <span style="color: #aaaaaa; font-size: 10px;">Normal Route Cost: $${shipment.metrics.cost_usd.toLocaleString()}</span>
       </div>`,
       { permanent: true, direction: 'top', offset: [0, -10] }
     );
