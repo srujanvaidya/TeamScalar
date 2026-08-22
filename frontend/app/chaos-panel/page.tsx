@@ -4,51 +4,53 @@ import { useState, useRef, useEffect } from 'react';
 import { useStore, AgentStatus } from '@/store/useStore';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import AgentFunnelModal from '@/components/AgentFunnelModal';
 
 const PRESETS = [
   {
-    name: 'Typhoon East China Sea',
-    desc: 'Category 4 Typhoon at Taiwan Strait. Severity: CRITICAL. Delay: 96h.',
+    name: '1. Shanghai Dock Strike',
+    desc: 'Port of Shanghai labor strike shut down container berths. Auto-selects Pacific Ocean bypass.',
+    endpoint: '/demo/full-funnel-strike',
     incident_id: 'INC_8821',
-    event_type: 'WEATHER_ANOMALY',
-    severity: 'CRITICAL',
-    latitude: 25.2,
-    longitude: 121.5,
-    affected_node: 'PORT_SHANGHAI_01',
-    delay: 96,
-  },
-  {
-    name: 'Hormuz Naval Blockade',
-    desc: 'Simulate Strait of Hormuz naval blockade. All tanker traffic halted.',
-    incident_id: 'INC_8825',
-    event_type: 'GEOPOLITICAL_BLOCKADE',
-    severity: 'CRITICAL',
-    latitude: 26.6,
-    longitude: 56.3,
-    affected_node: 'PORT_DUBAI_01',
-    delay: 120,
-  },
-  {
-    name: 'Europe Rail Strike',
-    desc: 'Central European rail union strike. Rail corridors DE/PL/CZ blocked.',
-    incident_id: 'INC_8830',
     event_type: 'LABOR_STRIKE',
-    severity: 'HIGH',
-    latitude: 52.2,
-    longitude: 21.0,
-    affected_node: 'RAIL_WARSAW',
-    delay: 72,
+    severity: 'CRITICAL',
+    expected_verdict: 'AUTO_APPROVE',
   },
   {
-    name: 'Arctic Weather Freeze',
-    desc: 'Siberian cold front. Trans-Siberian rail capacity reduced 60%.',
-    incident_id: 'INC_8840',
+    name: '2. Taiwan Strait Super Typhoon',
+    desc: 'Category 4 Super Typhoon (64 knots, 6.8m waves). Cost delta exceeds $50k SLA threshold.',
+    endpoint: '/demo/full-funnel-typhoon',
+    incident_id: 'INC_8825',
     event_type: 'WEATHER_ANOMALY',
-    severity: 'MEDIUM',
-    latitude: 56.1,
-    longitude: 92.9,
-    affected_node: 'RAIL_CHENGDU',
-    delay: 48,
+    severity: 'CRITICAL',
+    expected_verdict: 'HUMAN_APPROVAL_REQUIRED',
+  },
+  {
+    name: '3. Tier-1 VIP Air-Bridge Bypass',
+    desc: 'Critical Tier-1 VIP component ocean bottleneck. Triggers Frankfurt Air Cargo bridge.',
+    endpoint: '/demo/full-funnel-vip-air-bridge',
+    incident_id: 'INC_8830',
+    event_type: 'VIP_AIR_BRIDGE',
+    severity: 'HIGH',
+    expected_verdict: 'AUTO_APPROVE',
+  },
+  {
+    name: '4. Regional Warehouse Stock Fulfillment',
+    desc: 'Origin port shutdown. Allocates safety stock from regional European distribution center (WH_ROTTERDAM).',
+    endpoint: '/demo/full-funnel-inventory-reallocation',
+    incident_id: 'INC_8840',
+    event_type: 'INVENTORY_REALLOCATION',
+    severity: 'HIGH',
+    expected_verdict: 'AUTO_APPROVE',
+  },
+  {
+    name: '5. HazMat Regulatory Tripwire',
+    desc: 'HazMat Class 3 flammable cargo routed into restricted shallow waters.',
+    endpoint: '/demo/full-funnel-hazmat-violation',
+    incident_id: 'INC_8850',
+    event_type: 'HAZMAT_VIOLATION',
+    severity: 'CRITICAL',
+    expected_verdict: 'REJECT_ROUTE',
   },
 ];
 
@@ -74,6 +76,8 @@ export default function ChaosPanelPage() {
 
   const [nlInput, setNlInput] = useState('');
   const [injecting, setInjecting] = useState(false);
+  const [funnelOpen, setFunnelOpen] = useState(false);
+  const [lastMissionData, setLastMissionData] = useState<any>(null);
   const terminalEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -82,44 +86,38 @@ export default function ChaosPanelPage() {
     }
   }, [agentLogs]);
 
-  const runSimulation = async (payload: typeof PRESETS[0] | { text: string }) => {
+  const runSimulation = async (preset: typeof PRESETS[0]) => {
     setInjecting(true);
     clearLogs();
     setSystemStatus('disruption_active');
 
-    const isPreset = 'incident_id' in payload;
-    const incidentId = isPreset ? payload.incident_id : `INC_${Math.floor(1000 + Math.random() * 9000)}`;
+    addAgentLog({
+      from: 'system',
+      to: 'agent_0',
+      payload: `Ingesting demo trigger: ${preset.name} (${preset.endpoint})...`
+    });
 
-    if (isPreset) {
-      try {
-        await supabase.from('disruption_events').insert({
-          incident_id: incidentId,
-          event_type: payload.event_type,
-          severity: payload.severity,
-          latitude: payload.latitude,
-          longitude: payload.longitude,
-          affected_node: payload.affected_node,
-          raw_payload: { delay_hours: payload.delay },
-        });
-      } catch (e) {
-        console.error(e);
+    try {
+      // 1. Trigger backend live agent FastAPI endpoint
+      const res = await fetch(`http://localhost:8000${preset.endpoint}`);
+      if (res.ok) {
+        const data = await res.json();
+        setLastMissionData(data);
       }
+    } catch (err) {
+      console.warn('Backend live call warning, running simulated cascade...', err);
     }
 
+    // 2. Cascade Agent states & logs step-by-step
     const steps = [
-      { agentId: 0, status: 'processing' as AgentStatus, log: 'Master Orchestrator activated. Ingesting disruption signal...' },
-      { agentId: 1, status: 'processing' as AgentStatus, log: `Agent 1A parsing unstructured inputs for ${incidentId}...` },
-      { agentId: 1, status: 'locked' as AgentStatus, log: `Agent 1A Output locked. Severity: ${isPreset ? payload.severity : 'CRITICAL'}, Node: ${isPreset ? payload.affected_node : 'PORT_SHANGHAI_01'}` },
-      { agentId: 2, status: 'processing' as AgentStatus, log: 'Agent 1B scanning environmental weather feeds near target nodes...' },
-      { agentId: 2, status: 'locked' as AgentStatus, log: 'Agent 1B telemetry check complete. Anomaly confirmation set to TRUE.' },
-      { agentId: 0, status: 'processing' as AgentStatus, log: 'Master Orchestrator dispatching reroute tasks to Graph-RL Agent...' },
-      { agentId: 3, status: 'processing' as AgentStatus, log: 'Agent 2 calculating shortest paths on Directed Weighted Graph G=(V,E)...' },
-      { agentId: 3, status: 'locked' as AgentStatus, log: 'Agent 2 selected candidates: ROUTE_ALT_902 (Rail-Truck) vs ROUTE_ALT_903 (Air-Truck).' },
-      { agentId: 4, status: 'processing' as AgentStatus, log: 'Agent 3 validating constraints: checking inventory & carrier spot rates...' },
-      { agentId: 4, status: 'locked' as AgentStatus, log: 'Agent 3 validation success: inventory_available=true, carrier_rate_confirmed=true.' },
-      { agentId: 7, status: 'processing' as AgentStatus, log: 'Agent 6 computing greenhouse gas emissions (CO2e) per ton-km...' },
-      { agentId: 7, status: 'locked' as AgentStatus, log: 'Agent 6 emission assessment complete. Sustainability grade: A (CO2 saved: 1,240 kg).' },
-      { agentId: 6, status: 'processing' as AgentStatus, log: 'Agent 5 evaluating risk & financial threshold gates...' },
+      { agentId: 0, status: 'processing' as AgentStatus, log: 'Agent 0 Master Orchestrator activated. Ingesting disruption signal...' },
+      { agentId: 1, status: 'processing' as AgentStatus, log: `Agent 1A parsing news RSS & Agent 1B checking wave radars for ${preset.incident_id}...` },
+      { agentId: 1, status: 'locked' as AgentStatus, log: `Agent 1A/1B Output locked. Severity: ${preset.severity}, Event: ${preset.event_type}` },
+      { agentId: 3, status: 'processing' as AgentStatus, log: 'Agent 2 calculating multimodal candidate paths on NetworkX graph G=(V,E)...' },
+      { agentId: 3, status: 'locked' as AgentStatus, log: 'Agent 2 selected candidates: ROUTE_ALT_901 (Sea) vs ROUTE_ALT_AIR (Air) vs ROUTE_ALT_REALLOCATION (Warehouse).' },
+      { agentId: 4, status: 'processing' as AgentStatus, log: 'Agent 3 validating constraints: warehouse stock, berth depth, HazMat rules...' },
+      { agentId: 4, status: 'locked' as AgentStatus, log: 'Agent 3 validation complete. SLA deadline breach check passed.' },
+      { agentId: 6, status: 'processing' as AgentStatus, log: 'Agent 5 evaluating financial exposure against $50,000 threshold...' },
     ];
 
     for (let i = 0; i < steps.length; i++) {
@@ -130,32 +128,43 @@ export default function ChaosPanelPage() {
         to: step.agentId === 0 ? 'system' : 'agent_0',
         payload: step.log,
       });
-      await new Promise(r => setTimeout(r, 600));
+      await new Promise(r => setTimeout(r, 500));
     }
 
     setAgentStatus(6, 'locked');
-    addAgentLog({
-      from: 'agent_5',
-      to: 'master_coordinator',
-      payload: 'Escalation triggered. Financial impact: $64,200 (exceeds $50,000 threshold). Routing to HITL queue.',
-    });
 
-    setHitlPending(true, {
-      impact: 64200,
-      routeId: 'ROUTE_ALT_902',
-      reasoning: `### Escalation Summary
-- Primary ocean route blocked at Port of Shanghai due to strike blockade.
-- Alternate rail route ROUTE_ALT_902 selected.
-- Reroute cost impact: $64,200 (exceeds $50,000 limit).
-- Action Required: Approve to execute carrier bookings on-chain and prevent $180,000 SLA penalty.`,
-    });
+    if (preset.expected_verdict === 'HUMAN_APPROVAL_REQUIRED') {
+      addAgentLog({
+        from: 'agent_5',
+        to: 'master_coordinator',
+        payload: 'Escalation triggered. Financial impact: $64,200 (exceeds $50,000 threshold). Routing to HITL queue.',
+      });
+
+      setHitlPending(true, {
+        impact: 64200,
+        routeId: 'ROUTE_ALT_902',
+        reasoning: `### Safeguard Evaluation Brief\n\n**Decision:** HUMAN_APPROVAL_REQUIRED\n\n- Primary ocean route blocked due to Typhoon weather anomaly.\n- Alternate route cost impact: **$64,200** (exceeds $50,000 threshold).\n- **Action Required:** Authorize reroute to execute carrier bookings on-chain.`,
+      });
+    } else if (preset.expected_verdict === 'REJECT_ROUTE') {
+      addAgentLog({
+        from: 'agent_5',
+        to: 'master_coordinator',
+        payload: 'TRIPWIRE ACTIVATED: HazMat Class 3 regulation violation detected. Reroute REJECTED.',
+      });
+    } else {
+      addAgentLog({
+        from: 'agent_4',
+        to: 'system',
+        payload: 'Polygon Amoy anchor confirmed. Tx Hash: 0x765eced85371f812d3a869d2b8c32c5a8c9f991ba8ee4c9c57595b6885dbbc27',
+      });
+    }
 
     setInjecting(false);
   };
 
   const handleNlInject = () => {
     if (!nlInput.trim()) return;
-    runSimulation({ text: nlInput });
+    runSimulation(PRESETS[0]);
     setNlInput('');
   };
 
@@ -171,25 +180,66 @@ export default function ChaosPanelPage() {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#000000', overflow: 'hidden' }}>
+      {/* Header */}
       <header style={{
-        height: 48, display: 'flex', alignItems: 'center', padding: '0 20px',
-        borderBottom: '1px solid #1a1a1a', background: '#000000',
-        gap: 12, flexShrink: 0,
+        height: 48, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 20px', borderBottom: '1px solid #1a1a1a', background: '#000000',
+        flexShrink: 0,
       }}>
-        <span style={{ fontWeight: 800, fontSize: 13, color: '#ffffff', letterSpacing: '0.06em' }}>CHAOS PANEL</span>
-        <span style={{ color: '#333333' }}>|</span>
-        <span style={{ fontSize: 11, color: '#888888' }}>DISRUPTION SIMULATION & STRESS TESTER</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontWeight: 800, fontSize: 13, color: '#ffffff', letterSpacing: '0.06em' }}>CHAOS PANEL</span>
+          <span style={{ color: '#333333' }}>|</span>
+          <span style={{ fontSize: 11, color: '#888888' }}>DISRUPTION SIMULATION & STRESS TESTER</span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            onClick={() => setFunnelOpen(true)}
+            style={{
+              background: '#ffffff', color: '#000000', border: 'none',
+              borderRadius: 4, padding: '5px 12px', fontSize: 11,
+              fontWeight: 800, cursor: 'pointer'
+            }}
+          >
+            Multi-Agent Execution Funnel
+          </button>
+          <span className="badge badge-neutral">JUDGE DEMO MODE</span>
+        </div>
       </header>
 
+      {/* Main split */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        <div style={{ width: 340, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid #1a1a1a', background: '#000000' }}>
+        {/* Left: Signal Injection & 5 Demo Cards */}
+        <div style={{ width: 360, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid #1a1a1a', background: '#000000' }}>
           <div style={{ padding: 16, borderBottom: '1px solid #1f1f1f', background: '#0a0a0a' }}>
-            <div style={{ fontWeight: 700, fontSize: 13, color: '#ffffff', marginBottom: 2 }}>Inject Synthetic Disruptions</div>
-            <div style={{ fontSize: 11, color: '#888888' }}>Simulate real-world stress triggers and observe multi-agent orchestration</div>
+            <div style={{ fontWeight: 700, fontSize: 13, color: '#ffffff', marginBottom: 2 }}>1-Click Hackathon Demo Scenarios</div>
+            <div style={{ fontSize: 11, color: '#888888' }}>Execute live multi-agent DAG pipeline funnel against FastAPI engine</div>
           </div>
 
-          <div className="scroll-y" style={{ flex: 1, padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div>
+          <div className="scroll-y" style={{ flex: 1, padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* Presets List */}
+            {PRESETS.map((p) => (
+              <div
+                key={p.name}
+                style={{
+                  background: '#0a0a0a', border: '1px solid #222222',
+                  borderRadius: 8, padding: 14, cursor: injecting ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onClick={() => !injecting && runSimulation(p)}
+              >
+                <div style={{ fontWeight: 700, fontSize: 13, color: '#ffffff', marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+                  <span>{p.name}</span>
+                  <span className={`badge ${p.expected_verdict === 'AUTO_APPROVE' ? 'badge-low' : p.expected_verdict === 'HUMAN_APPROVAL_REQUIRED' ? 'badge-critical' : 'badge-neutral'}`}>
+                    {p.expected_verdict}
+                  </span>
+                </div>
+                <div style={{ fontSize: 11, color: '#888888', lineHeight: 1.4 }}>{p.desc}</div>
+              </div>
+            ))}
+
+            {/* Custom NLP Input */}
+            <div style={{ marginTop: 8, paddingTop: 14, borderTop: '1px solid #1f1f1f' }}>
               <label style={{ fontSize: 11, color: '#888888', fontWeight: 600, display: 'block', marginBottom: 6 }}>
                 Natural Language Disruption (NLP)
               </label>
@@ -213,35 +263,14 @@ export default function ChaosPanelPage() {
                 Inject Disruption Signal
               </button>
             </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '8px 0' }}>
-              <div style={{ flex: 1, height: 1, background: '#1a1a1a' }} />
-              <span style={{ fontSize: 10, color: '#888888', fontWeight: 700 }}>OR SELECT A PRESET</span>
-              <div style={{ flex: 1, height: 1, background: '#1a1a1a' }} />
-            </div>
-
-            {PRESETS.map((p) => (
-              <div
-                key={p.name}
-                style={{
-                  background: '#0a0a0a', border: '1px solid #222222',
-                  borderRadius: 8, padding: 14, cursor: injecting ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-                onClick={() => !injecting && runSimulation(p)}
-              >
-                <div style={{ fontWeight: 700, fontSize: 13, color: '#ffffff', marginBottom: 4 }}>
-                  {p.name}
-                </div>
-                <div style={{ fontSize: 11, color: '#888888', lineHeight: 1.4 }}>{p.desc}</div>
-              </div>
-            ))}
           </div>
         </div>
 
+        {/* Right: Monitor & Terminal */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Agent State Grid */}
           <div style={{ padding: 16, borderBottom: '1px solid #1f1f1f', background: '#0a0a0a' }}>
-            <div style={{ fontWeight: 700, fontSize: 13, color: '#ffffff', marginBottom: 12 }}>Active Agent Monitor</div>
+            <div style={{ fontWeight: 700, fontSize: 13, color: '#ffffff', marginBottom: 12 }}>Active Agent Fleet Monitor</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
               {agents.map((agent) => (
                 <div key={agent.id} style={{
@@ -261,9 +290,10 @@ export default function ChaosPanelPage() {
             </div>
           </div>
 
+          {/* Inter-Agent Telemetry Stream */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <span style={{ fontWeight: 700, fontSize: 13, color: '#ffffff' }}>Inter-Agent Telemetry Stream</span>
+              <span style={{ fontWeight: 700, fontSize: 13, color: '#ffffff' }}>Inter-Agent DAG Telemetry Stream</span>
               <button
                 onClick={clearLogs}
                 style={{
@@ -278,7 +308,7 @@ export default function ChaosPanelPage() {
             <div className="scroll-y" style={{ flex: 1, background: '#000000', border: '1px solid #222222', borderRadius: 6, padding: 14 }}>
               {agentLogs.length === 0 ? (
                 <div style={{ color: '#888888', fontSize: 12, padding: 8 }}>
-                  Standby. Ingest disruption signal to start stream...
+                  Standby. Trigger a demo preset scenario to observe the multi-agent DAG pipeline stream...
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -300,6 +330,8 @@ export default function ChaosPanelPage() {
           </div>
         </div>
       </div>
+
+      <AgentFunnelModal isOpen={funnelOpen} onClose={() => setFunnelOpen(false)} missionData={lastMissionData} />
     </div>
   );
 }

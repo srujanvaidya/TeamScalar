@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/store/useStore';
 import WorldMap, { Shipment, RouteLeg } from '@/components/WorldMap';
 import HITLModal from '@/components/HITLModal';
+import AgentFunnelModal from '@/components/AgentFunnelModal';
 
 const MODE_LABEL_MAP: Record<string, string> = {
   ROAD_TRUCK: 'ROAD TRUCK',
@@ -24,6 +25,7 @@ export default function CommandCenterPage() {
   const [activeAltRouteId, setActiveAltRouteId] = useState<string | null>('ROUTE_ALT_A');
   const [showJsonMsg, setShowJsonMsg] = useState(false);
   const [viewTab, setViewTab] = useState<'LEGS' | 'ALTERNATES'>('LEGS');
+  const [funnelOpen, setFunnelOpen] = useState(false);
 
   const fetchBackendShipments = async () => {
     setLoading(true);
@@ -77,7 +79,7 @@ export default function CommandCenterPage() {
 
   return (
     <div style={{ display: 'flex', height: '100vh', flexDirection: 'column', background: '#000000', color: '#ffffff', overflow: 'hidden' }}>
-      {/* Monochromatic Header (Pure Black & White) */}
+      {/* Monochromatic Header (Pure Black & White with DAG Inspector Button) */}
       <header style={{
         height: 48, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 20px', borderBottom: '1px solid #1a1a1a',
@@ -90,6 +92,18 @@ export default function CommandCenterPage() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {/* Multi-Agent DAG Funnel Inspector Button */}
+          <button
+            onClick={() => setFunnelOpen(true)}
+            style={{
+              background: '#ffffff', color: '#000000', border: 'none',
+              borderRadius: 4, padding: '5px 12px', fontSize: 11,
+              fontWeight: 800, cursor: 'pointer'
+            }}
+          >
+            Multi-Agent Execution Funnel
+          </button>
+
           <button
             onClick={fetchBackendShipments}
             style={{
@@ -365,6 +379,7 @@ export default function CommandCenterPage() {
       )}
 
       {hitlPending && <HITLModal />}
+      <AgentFunnelModal isOpen={funnelOpen} onClose={() => setFunnelOpen(false)} missionData={selectedShipment} />
     </div>
   );
 }

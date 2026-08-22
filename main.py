@@ -184,7 +184,7 @@ def check_hazmat(cargo_id: str = Query(..., description="Cargo ID to verify HazM
     return validator.check_hazmat(cargo_id)
 
 
-# --- Agent 0 Endpoint (Master Orchestrator DAG) ---
+# --- Agent 0 Endpoint (Master Orchestrator DAG & Demo Scenarios) ---
 
 @app.post("/api/v1/orchestrator/dispatch", response_model=OrchestrationResult)
 async def dispatch_shipment(payload: ShipmentContext):
@@ -194,6 +194,7 @@ async def dispatch_shipment(payload: ShipmentContext):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/demo/full-mission-strike", response_model=OrchestrationResult)
+@app.get("/demo/full-funnel-strike", response_model=OrchestrationResult)
 async def demo_full_mission_strike():
     context = ShipmentContext(
         container_id="CNTR-SHA-BOM-9921",
@@ -209,6 +210,7 @@ async def demo_full_mission_strike():
     return await orchestrator.run_shipment_mission(context, inject_disruption_text=disruption_text)
 
 @app.get("/demo/full-mission-typhoon", response_model=OrchestrationResult)
+@app.get("/demo/full-funnel-typhoon", response_model=OrchestrationResult)
 async def demo_full_mission_typhoon():
     context = ShipmentContext(
         container_id="CNTR-TPE-ROT-4481",
@@ -259,6 +261,21 @@ async def demo_full_funnel_inventory_reallocation():
         customer_tier="TIER_1_VIP"
     )
     disruption_text = "CRITICAL ALERT: Shanghai Port Dockworkers Strike has closed down Port Operations."
+    return await orchestrator.run_shipment_mission(context, inject_disruption_text=disruption_text)
+
+@app.get("/demo/full-funnel-hazmat-violation", response_model=OrchestrationResult)
+async def demo_full_funnel_hazmat_violation():
+    context = ShipmentContext(
+        container_id="CNTR-HAZMAT-FAIL-552",
+        origin_node="PORT_SHANGHAI_01",
+        destination_node="PORT_ROTTERDAM_02",
+        cargo_type="HAZMAT_CLASS_3_FLAMMABLE",
+        is_hazmat=True,
+        baseline_cost_usd=50000.0,
+        sla_deadline_epoch=1787349283,
+        default_corridor_path=["PORT_SHANGHAI_01", "CORRIDOR_TAIWAN_STRAIT", "PORT_ROTTERDAM_02"]
+    )
+    disruption_text = "CRITICAL ALERT: Canal Authority HazMat transit restrictions engaged."
     return await orchestrator.run_shipment_mission(context, inject_disruption_text=disruption_text)
 
 
