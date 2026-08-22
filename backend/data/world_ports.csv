@@ -1,0 +1,43 @@
+port_id,port_name,country,latitude,longitude,water_body,channel_depth_m,is_major_hub
+CNSHG,Shanghai,China,31.2304,121.4737,East China Sea,16.5,True
+SGSIN,Singapore,Singapore,1.3521,103.8198,Singapore Strait,16.5,True
+CNZOS,Zhoushan,China,30.0269,122.1064,East China Sea,16.5,True
+CNTXG,Tianjin,China,39.0841,117.201,Bohai Sea,16.5,True
+HKHKG,Hong Kong,Hong Kong,22.3193,114.1694,South China Sea,16.5,True
+NLAMS,Amsterdam,Netherlands,52.3702,4.8952,North Sea,16.5,True
+BEANR,Antwerp,Belgium,51.2194,4.4025,Scheldt Estuary,16.5,True
+CNGZG,Guangzhou,China,23.1291,113.2644,South China Sea,16.5,True
+CNNBG,Ningbo,China,29.8683,121.544,East China Sea,16.5,True
+CNXMG,Xiamen,China,24.4798,118.0894,Taiwan Strait,16.5,True
+KRPUS,Busan,Korea,35.1796,129.0756,Sea of Japan,16.5,True
+USSEA,Seattle,USA,47.6062,-122.3321,Puget Sound,16.5,True
+DEHAM,Hamburg,Germany,53.5511,9.9937,Elbe River,16.5,True
+TWKHH,Kaohsiung,Taiwan,22.6273,120.3014,Taiwan Strait,16.5,True
+USNYC,New York,USA,40.7128,-74.006,North Atlantic Ocean,16.5,True
+CNDLC,Dalian,China,38.914,121.6147,Bohai Sea,16.5,True
+AEDXB,Dubai,United Arab Emirates,25.2048,55.2708,Persian Gulf,16.5,True
+ESVLC,Valencia,Spain,39.4699,-0.3763,Mediterranean Sea,16.5,True
+VNSGN,Ho Chi Minh,Vietnam,10.8231,106.6297,South China Sea,16.5,True
+MYPKG,Port Klang,Malaysia,3.0,101.4,Malacca Strait,16.5,True
+USLAX,Los Angeles,USA,33.7432,-118.2673,North Pacific Ocean,16.5,True
+USLGB,Long Beach,USA,33.7701,-118.1937,North Pacific Ocean,16.5,True
+GRPIR,Piraeus,Greece,37.9429,23.6462,Aegean Sea,16.5,True
+THLCH,Laem Chabang,Thailand,13.08,100.89,Gulf of Thailand,16.5,True
+CNSZX,Shenzhen,China,22.5431,114.0579,South China Sea,16.5,True
+ESALG,Algeciras,Spain,36.1408,-5.4562,Strait of Gibraltar,16.5,True
+AEJEA,Jebel Ali,United Arab Emirates,24.9857,55.0756,Persian Gulf,16.5,True
+INMUN,Mundra,India,22.84,69.7,Gulf of Kutch,16.5,True
+LKCMB,Colombo,Sri Lanka,6.9271,79.8612,Laccadive Sea,16.5,True
+CNSHA,Shanghai,China,31.2304,121.4737,East China Sea,16.5,True
+CNTAO,Cntao,Global,36.0671,120.3826,Yellow Sea,16.5,True
+NLROT,Rotterdam,Netherlands,51.9244,4.4777,North Sea,16.5,True
+MYTPP,Mytpp,Global,1.37,103.55,Malacca Strait,16.5,True
+INNSA,Nhava Sheva,India,18.95,72.95,Arabian Sea,16.5,True
+CNYIK,Cnyik,Global,40.6667,122.2333,Bohai Sea,16.5,True
+PHMNL,Phmnl,Global,14.5995,120.9842,Manila Bay,16.5,True
+CNTCG,Cntcg,Global,31.4503,121.1345,East China Sea,16.5,True
+USSAV,Ussav,Global,32.0809,-81.0912,North Atlantic Ocean,16.5,True
+GBFXT,Gbfxt,Global,51.9632,1.3513,North Sea,16.5,True
+PORT_SHANGHAI_01,Shanghai,China,31.2304,121.4737,East China Sea,16.5,True
+PORT_ROTTERDAM_02,Rotterdam,Netherlands,51.9244,4.4777,North Sea,16.5,True
+PORT_LOS_ANGELES,Los Angeles,USA,33.7432,-118.2673,North Pacific Ocean,16.5,True

@@ -168,6 +168,30 @@ async def demo_full_mission_typhoon():
     }
     return await orchestrator.run_shipment_mission(context, inject_weather=weather_injection)
 
+@app.get("/demo/full-funnel-strike", response_model=OrchestrationResult)
+async def demo_full_funnel_strike():
+    return await demo_full_mission_strike()
+
+@app.get("/demo/full-funnel-typhoon", response_model=OrchestrationResult)
+async def demo_full_funnel_typhoon():
+    return await demo_full_mission_typhoon()
+
+@app.get("/demo/full-funnel-hazmat-violation", response_model=OrchestrationResult)
+async def demo_full_funnel_hazmat_violation():
+    context = ShipmentContext(
+        container_id="CNTR-HAZMAT-VIOLATION-505",
+        origin_node="PORT_SHANGHAI_01",
+        destination_node="PORT_ROTTERDAM_02",
+        cargo_type="HAZMAT_CLASS_3_FLAMMABLE",
+        is_hazmat=True,
+        baseline_cost_usd=50000.0,
+        sla_deadline_epoch=1787349283,
+        default_corridor_path=["PORT_SHANGHAI_01", "CORRIDOR_TAIWAN_STRAIT", "PORT_ROTTERDAM_02"]
+    )
+    disruption_text = "CRITICAL ALERT: Shanghai Port Dockworkers Strike has closed down Port Operations."
+    return await orchestrator.run_shipment_mission(context, inject_disruption_text=disruption_text)
+
+
 # --- Tejas's Shipments Endpoints ---
 @app.get("/api/v1/shipments")
 def get_all_shipments():
@@ -229,6 +253,43 @@ def run_full_pipeline(payload: DisruptionPayload, cargo_id: str = Query("CARGO_2
         },
         "agent_2_candidates": nav_response.candidates,
         "agent_3_validations": val_response.results
+    }
+
+# --- Spatial Maritime Registry Endpoints ---
+@app.get("/api/v1/ports/search")
+def api_search_ports(q: str = Query(..., description="Query substring for port name, ID or country")):
+    from src.data.port_registry import GlobalPortRegistry
+    registry = GlobalPortRegistry()
+    results = registry.search_ports(q)
+    return [p.model_dump() for p in results]
+
+@app.get("/api/v1/ports/nearby")
+def api_nearby_ports(
+    lat: float = Query(..., description="Latitude coordinate"),
+    lon: float = Query(..., description="Longitude coordinate"),
+    radius_km: float = Query(600.0, description="Search radius in kilometers")
+):
+    from src.data.port_registry import GlobalPortRegistry
+    registry = GlobalPortRegistry()
+    results = registry.search_nearby_ports(lat, lon, radius_km)
+    return [p.model_dump() for p in results]
+
+@app.get("/api/v1/ports/route-distance")
+def api_route_distance(
+    origin: str = Query(..., description="Origin port ID or alias"),
+    destination: str = Query(..., description="Destination port ID or alias")
+):
+    from src.data.port_registry import GlobalPortRegistry
+    registry = GlobalPortRegistry()
+    port1 = registry.get_port(origin)
+    port2 = registry.get_port(destination)
+    if not port1 or not port2:
+        raise HTTPException(status_code=404, detail="One or both ports could not be resolved.")
+    distance_nm = registry.compute_maritime_distance_nm(origin, destination)
+    return {
+        "origin": port1.model_dump(),
+        "destination": port2.model_dump(),
+        "maritime_distance_nm": distance_nm
     }
 
 if __name__ == "__main__":

@@ -5,10 +5,15 @@ import logging
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
+# Import Shiva's Perception and Safety Agents
 from src.agents.agent_1a import NewsSemanticParserAgent
 from src.agents.agent_1b import WeatherTelemetryAgent
 from src.agents.agent_5 import FinancialRiskSafeguardAgent
 from src.contracts.schemas import UnifiedDisruptionEvent, RiskSafeguardEvaluation, Severity, EventSource
+
+# Import Tejas's Navigator and Validator Agents
+from src.agents.agent_2 import MultimodalNavigatorAgent
+from src.agents.agent_3 import RoutePolicyValidatorAgent
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +25,7 @@ class ShipmentContext(BaseModel):
     is_hazmat: bool = Field(default=False, description="Flag indicating hazardous cargo status")
     baseline_cost_usd: float = Field(..., description="Standard base cost of the original route")
     sla_deadline_epoch: int = Field(..., description="Epoch timestamp of SLA delivery deadline")
-    default_corridor_path: List[str] = Field(..., description="Standard sequence of logistics nodes/corridors")
+    default_corridor_path: List[str] = Field(..., description="Standard sequence of logistics corridors")
 
 class OrchestrationResult(BaseModel):
     shipment_id: str = Field(..., description="ID of the shipment context evaluated")
@@ -34,12 +39,18 @@ class OrchestrationResult(BaseModel):
     safeguard_evaluation: RiskSafeguardEvaluation = Field(..., description="Output from the financial risk safeguard agent")
     audit_hash: str = Field(..., description="SHA-256 cryptographic audit trail signature")
     execution_status: str = Field(..., description="Final dispatch decision: DISPATCHED_AUTONOMOUS, HELD_FOR_HUMAN_APPROVAL, REJECTED_SAFETY_VIOLATION")
+    origin_coordinates: List[float] = Field(default_factory=list, description="Origin GPS coordinates [lat, lon]")
+    destination_coordinates: List[float] = Field(default_factory=list, description="Destination GPS coordinates [lat, lon]")
+    transit_distance_nm: float = Field(default=0.0, description="Nautical miles distance between origin and destination")
 
 class MasterOrchestratorAgent:
     def __init__(self):
-        self.agent_1a = NewsSemanticParserAgent()
-        self.agent_1b = WeatherTelemetryAgent()
-        self.agent_5 = FinancialRiskSafeguardAgent()
+        # Instantiate all 5 agents (News, Weather, Navigator, Validator, Safeguard)
+        self.news_agent = self.agent_1a = NewsSemanticParserAgent()
+        self.weather_agent = self.agent_1b = WeatherTelemetryAgent()
+        self.navigator_agent = MultimodalNavigatorAgent()
+        self.validator_agent = RoutePolicyValidatorAgent()
+        self.safeguard_agent = self.agent_5 = FinancialRiskSafeguardAgent()
 
     async def run_shipment_mission(
         self,
@@ -47,25 +58,25 @@ class MasterOrchestratorAgent:
         inject_disruption_text: Optional[str] = None,
         inject_weather: Optional[dict] = None
     ) -> OrchestrationResult:
-        """Run the complete multi-agent orchestrator pipeline."""
+        """Run the complete multi-agent orchestrator pipeline funnel."""
         
-        # Concurrently perform fan-out threat perception
+        # Step 1: Concurrently perform fan-out threat perception
         tasks = []
         
         # News Ingestion (1A)
         if inject_disruption_text:
-            tasks.append(self.agent_1a.parse_article(inject_disruption_text))
+            tasks.append(self.news_agent.parse_article(inject_disruption_text))
         else:
             async def get_news_threats():
-                alerts = await self.agent_1a.fetch_live_alerts()
+                alerts = await self.news_agent.fetch_live_alerts()
                 if alerts:
-                    return await self.agent_1a.parse_article(alerts[0]["text"], alerts[0]["url"])
+                    return await self.news_agent.parse_article(alerts[0]["text"], alerts[0]["url"])
                 return None
             tasks.append(get_news_threats())
 
         # Weather/Telemetry Ingestion (1B)
         if inject_weather:
-            tasks.append(self.agent_1b.evaluate_vessel_telemetry(
+            tasks.append(self.weather_agent.evaluate_vessel_telemetry(
                 vessel_id="SYSTEM_MONITOR",
                 lat=inject_weather.get("lat", 24.5),
                 lon=inject_weather.get("lon", 119.8),
@@ -75,13 +86,12 @@ class MasterOrchestratorAgent:
             ))
         else:
             async def get_weather_threats():
-                # Check for weather disruptions on the chokepoints intersecting path
                 for node in context.default_corridor_path:
                     from src.agents.agent_1b import CHOKEPOINTS
                     if node in CHOKEPOINTS:
                         coords = CHOKEPOINTS[node]
-                        weather = await self.agent_1b.fetch_corridor_weather(coords["lat"], coords["lon"])
-                        return await self.agent_1b.evaluate_vessel_telemetry(
+                        weather = await self.weather_agent.fetch_corridor_weather(coords["lat"], coords["lon"])
+                        return await self.weather_agent.evaluate_vessel_telemetry(
                             vessel_id="SYSTEM_MONITOR",
                             lat=coords["lat"],
                             lon=coords["lon"],
@@ -97,52 +107,46 @@ class MasterOrchestratorAgent:
         active_disruptions = []
         for r in results:
             if isinstance(r, UnifiedDisruptionEvent):
-                # Filter events with severity >= Severity.HIGH intersecting default path
                 intersecting = any(node in context.default_corridor_path for node in r.affected_nodes)
                 is_high_risk = r.severity in [Severity.HIGH, Severity.CRITICAL]
                 if intersecting and is_high_risk:
                     active_disruptions.append(r)
 
-        # Dynamic Corridor Planning & Cost Calculation
+        # Step 2: Threat Aggregation & Bypassing Decision Gate
         reroute_selected = len(active_disruptions) > 0
         proposed_path = list(context.default_corridor_path)
         proposed_cost = context.baseline_cost_usd
-        hazmat_compliant = not context.is_hazmat # If hazmat and corridor violated, will fail safety check
+        hazmat_compliant = not context.is_hazmat
+        sla_deadline_breached = False
+        sla_penalty = 0.0
 
         if reroute_selected:
-            primary_disruption = active_disruptions[0]
-            # Bypassing logic: reroute PORT_SHANGHAI_01 / TAIWAN_STRAIT via EAST_PACIFIC_BYPASS
-            for i, node in enumerate(proposed_path):
-                if node in primary_disruption.affected_nodes:
-                    if node == "CORRIDOR_TAIWAN_STRAIT" or node == "PORT_SHANGHAI_01":
-                        proposed_path[i] = "CORRIDOR_EAST_PACIFIC_BYPASS"
-                        proposed_cost = context.baseline_cost_usd + 8200.0 if "strike" in primary_disruption.description.lower() else context.baseline_cost_usd + 64200.0
-                    else:
-                        proposed_path[i] = node + "_BYPASS"
-                        proposed_cost = context.baseline_cost_usd + 15000.0
+            # Step 3: Graph Exploration (Agent 2)
+            candidate_corridors = await self.navigator_agent.find_alternative_corridors(
+                origin=context.origin_node,
+                destination=context.destination_node,
+                current_path=context.default_corridor_path,
+                active_disruptions=active_disruptions
+            )
 
-            # If the shipment carries HAZMAT, we verify waterway compliance
-            if context.is_hazmat:
-                # Class 3 Flammables cannot go through BYPASS corridors under safety protocol
-                if any("BYPASS" in node for node in proposed_path):
-                    hazmat_compliant = False
+            # Step 4: Policy Validation & Cost Estimation (Agent 3)
+            optimal_plan = await self.validator_agent.select_optimal_policy(
+                candidate_corridors=candidate_corridors,
+                baseline_cost_usd=context.baseline_cost_usd,
+                is_hazmat=context.is_hazmat
+            )
+
+            proposed_path = optimal_plan["selected_path"]
+            proposed_cost = optimal_plan["proposed_cost_usd"]
+            hazmat_compliant = optimal_plan["hazmat_compliant"]
+            sla_deadline_breached = optimal_plan["sla_breached"]
+            sla_penalty = optimal_plan["sla_penalty_usd"]
         else:
-            # If no threats, HazMat is compliant along standard corridor path
             if context.is_hazmat:
                 hazmat_compliant = True
 
-        # Safety & Financial Clearance (5)
-        sla_deadline_breached = False
-        sla_penalty = 0.0
-        # If rerouted cost is too high or delay is massive, calculate SLA breach
-        if reroute_selected:
-            total_delay = sum(d.estimated_delay_hours for d in active_disruptions)
-            # If delay is over 50 hours, it breaches SLA
-            if total_delay > 50.0:
-                sla_deadline_breached = True
-                sla_penalty = 25000.0 if total_delay > 72.0 else 10000.0
-
-        eval_res = await self.agent_5.evaluate_plan(
+        # Step 5: Safety & Financial Clearance Gate (Agent 5)
+        eval_res = await self.safeguard_agent.evaluate_plan(
             plan_id=f"eval_{context.container_id}",
             baseline_cost_usd=context.baseline_cost_usd,
             proposed_cost_usd=proposed_cost,
@@ -152,17 +156,26 @@ class MasterOrchestratorAgent:
             context_notes=f"Orchestration route deviation plan for {context.container_id}."
         )
 
-        # Cryptographic Audit Signature
+        # Step 6: Cryptographic Hash & Verdict Synthesis
         audit_raw = f"{context.container_id}:{eval_res.decision}:{proposed_cost}:{eval_res.risk_level}"
         audit_hash = hashlib.sha256(audit_raw.encode()).hexdigest()
 
-        # Synthesis final status
+
         if eval_res.decision == "REJECT_ROUTE":
             status = "REJECTED_SAFETY_VIOLATION"
         elif eval_res.decision == "HUMAN_APPROVAL_REQUIRED":
             status = "HELD_FOR_HUMAN_APPROVAL"
         else:
             status = "DISPATCHED_AUTONOMOUS"
+
+        # Resolve coordinates and maritime distance
+        from src.data.port_registry import GlobalPortRegistry
+        registry = GlobalPortRegistry()
+        origin_port = registry.get_port(context.origin_node)
+        dest_port = registry.get_port(context.destination_node)
+        origin_coords = [origin_port.latitude, origin_port.longitude] if origin_port else [0.0, 0.0]
+        dest_coords = [dest_port.latitude, dest_port.longitude] if dest_port else [0.0, 0.0]
+        dist_nm = registry.compute_maritime_distance_nm(context.origin_node, context.destination_node)
 
         return OrchestrationResult(
             shipment_id=context.container_id,
@@ -175,5 +188,8 @@ class MasterOrchestratorAgent:
             financial_impact_delta_usd=proposed_cost - context.baseline_cost_usd,
             safeguard_evaluation=eval_res,
             audit_hash=audit_hash,
-            execution_status=status
+            execution_status=status,
+            origin_coordinates=origin_coords,
+            destination_coordinates=dest_coords,
+            transit_distance_nm=dist_nm
         )
