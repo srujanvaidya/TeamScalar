@@ -1,3 +1,14 @@
+---
+title: TeamScalar Supply Chain Disruption Control Agent
+emoji: ⚡
+colorFrom: black
+colorTo: gray
+sdk: gradio
+sdk_version: 4.44.0
+app_file: app.py
+pinned: false
+---
+
 # 🌐 Supply Chain Disruption Control Agent
 ### *HOP 2026 // Scalar — Enterprise Hackathon Submission*
 

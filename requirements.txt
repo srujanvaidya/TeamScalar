@@ -1,4 +1,13 @@
-fastapi>=0.100.0
-uvicorn>=0.22.0
-networkx>=3.0
+gradio>=4.44.0
 pydantic>=2.0.0
+fastapi
+uvicorn
+pandas
+openpyxl
+web3
+networkx
+pytest
+pytest-asyncio
+httpx
+jinja2
+python-multipart
