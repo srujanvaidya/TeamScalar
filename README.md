@@ -32,14 +32,14 @@ flowchart TD
 
     subgraph Optimization_Layer [Graph-RL & Constraint Engine]
         E1 & E2 --> A0[Agent 0: Master Orchestrator]
-        A0 --> A2_Nav[Agent 2: Graph-RL Navigator]
-        A2_Nav -->|Bellman Value Iteration| C1[Multimodal Candidate Routes]
+        A0 -->|Bellman Value Iteration| C1[Multimodal Candidate Routes]
         C1 --> A3_Val[Agent 3: Constraint Validator]
         A3_Val -->|Pydantic Schema Audit| C2[Validated Route Options]
+        C2 --> A2_Nav[Agent 2: Graph-RL Navigator]
     end
 
     subgraph Governance_Layer [Financial Gate & Blockchain Provenance]
-        C2 --> A5_Gate[Agent 5: Financial Safeguard]
+        A2_Nav --> A5_Gate[Agent 5: Financial Safeguard]
         A5_Gate -->|Cost > $50k Cap| HITL[Human-in-the-Loop Approval Matrix]
         A5_Gate -->|Cost <= $50k Cap| AUTO[Autonomous Execution Engine]
         HITL -->|Human Approved| A6_Chain[Agent 6: Polygon Amoy Web3 Broadcast]
