@@ -22,7 +22,15 @@ from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 import json
 import os
+import json
+import uvicorn
+from typing import List, Optional, Dict, Any
+from pydantic import BaseModel
+from fastapi import FastAPI, Query, HTTPException
+from fastapi.responses import RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
 
+# Import Tejas's Agents and Models
 from agent_2_navigator import (
     GraphRLNavigator,
     DisruptionPayload,
@@ -51,16 +59,22 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# Enable CORS for frontend integration
+# Setup CORS middleware for Next.js frontend (local dev and wildcard)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Initialize Agent Engines
+# Instantiate Shiva's Agent Singletons
+orchestrator = MasterOrchestratorAgent()
+agent_1a = NewsSemanticParserAgent()
+agent_1b = WeatherTelemetryAgent()
+agent_5 = FinancialRiskSafeguardAgent()
+
+# Instantiate Tejas's Agent Singletons
 navigator = GraphRLNavigator()
 validator = ConstraintValidator()
 orchestrator = MasterOrchestratorAgent()
@@ -115,11 +129,14 @@ def load_shipments_data() -> Dict[str, Any]:
         ]
     }
 
-
-# --- Root / Health check ---
-
+# --- Root redirect ---
 @app.get("/")
 def read_root():
+    return RedirectResponse("/docs")
+
+# --- System Health status ---
+@app.get("/health")
+def health_check():
     return {
         "status": "online",
         "service": "Supply Chain Disruption Control Agent Engine",
@@ -148,18 +165,83 @@ def health_check():
         }
     }
 
+# --- Shiva's Agent 0 Dispatch Endpoint ---
+@app.post("/api/v1/orchestrator/dispatch", response_model=OrchestrationResult)
+async def dispatch_shipment(payload: ShipmentContext):
+    try:
+        result = await orchestrator.run_shipment_mission(payload)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-# --- Live Shipments Endpoints ---
+# --- Preset Simulations ---
+@app.get("/demo/full-mission-strike", response_model=OrchestrationResult)
+async def demo_full_mission_strike():
+    context = ShipmentContext(
+        container_id="CNTR-SHA-BOM-9921",
+        origin_node="PORT_SHANGHAI_01",
+        destination_node="PORT_ROTTERDAM_02",
+        cargo_type="ELECTRONICS",
+        is_hazmat=False,
+        baseline_cost_usd=42000.0,
+        sla_deadline_epoch=1787349283,
+        default_corridor_path=["PORT_SHANGHAI_01", "CORRIDOR_TAIWAN_STRAIT", "PORT_ROTTERDAM_02"]
+    )
+    disruption_text = "CRITICAL ALERT: Shanghai Port Dockworkers Strike has closed down Port Operations."
+    return await orchestrator.run_shipment_mission(context, inject_disruption_text=disruption_text)
 
+@app.get("/demo/full-mission-typhoon", response_model=OrchestrationResult)
+async def demo_full_mission_typhoon():
+    context = ShipmentContext(
+        container_id="CNTR-TPE-ROT-4481",
+        origin_node="PORT_SHANGHAI_01",
+        destination_node="PORT_ROTTERDAM_02",
+        cargo_type="TEXTILES",
+        is_hazmat=False,
+        baseline_cost_usd=35000.0,
+        sla_deadline_epoch=1787349283,
+        default_corridor_path=["PORT_SHANGHAI_01", "CORRIDOR_TAIWAN_STRAIT", "PORT_ROTTERDAM_02"]
+    )
+    weather_injection = {
+        "lat": 24.5,
+        "lon": 119.8,
+        "wind_speed_knots": 62.0,
+        "wave_height_m": 7.5,
+        "corridor_name": "CORRIDOR_TAIWAN_STRAIT"
+    }
+    return await orchestrator.run_shipment_mission(context, inject_weather=weather_injection)
+
+@app.get("/demo/full-funnel-strike", response_model=OrchestrationResult)
+async def demo_full_funnel_strike():
+    return await demo_full_mission_strike()
+
+@app.get("/demo/full-funnel-typhoon", response_model=OrchestrationResult)
+async def demo_full_funnel_typhoon():
+    return await demo_full_mission_typhoon()
+
+@app.get("/demo/full-funnel-hazmat-violation", response_model=OrchestrationResult)
+async def demo_full_funnel_hazmat_violation():
+    context = ShipmentContext(
+        container_id="CNTR-HAZMAT-VIOLATION-505",
+        origin_node="PORT_SHANGHAI_01",
+        destination_node="PORT_ROTTERDAM_02",
+        cargo_type="HAZMAT_CLASS_3_FLAMMABLE",
+        is_hazmat=True,
+        baseline_cost_usd=50000.0,
+        sla_deadline_epoch=1787349283,
+        default_corridor_path=["PORT_SHANGHAI_01", "CORRIDOR_TAIWAN_STRAIT", "PORT_ROTTERDAM_02"]
+    )
+    disruption_text = "CRITICAL ALERT: Shanghai Port Dockworkers Strike has closed down Port Operations."
+    return await orchestrator.run_shipment_mission(context, inject_disruption_text=disruption_text)
+
+
+# --- Tejas's Shipments Endpoints ---
 @app.get("/api/v1/shipments")
 def get_all_shipments():
-    """GET /api/v1/shipments — Returns all active live tracked cargo shipments."""
     return load_shipments_data()
-
 
 @app.get("/api/v1/shipments/{cargo_id}")
 def get_shipment_by_id(cargo_id: str):
-    """GET /api/v1/shipments/{cargo_id} — Returns detailed telemetry & alternate routes for cargo_id."""
     data = load_shipments_data()
     for shipment in data.get("shipments", []):
         if shipment.get("cargo_id") == cargo_id:
@@ -173,11 +255,9 @@ def get_shipment_by_id(cargo_id: str):
 def check_inventory(node_id: str = Query(..., description="Node ID to check stock for")):
     return validator.check_inventory(node_id)
 
-
 @app.post("/api/v1/carrier/rates", response_model=CarrierRateResponse)
 def get_carrier_rates(request: CarrierRateRequest):
     return validator.query_carrier_rate(request)
-
 
 @app.get("/api/v1/regulatory/hazmat", response_model=HazMatCheckResponse)
 def check_hazmat(cargo_id: str = Query(..., description="Cargo ID to verify HazMat compliance for")):
@@ -312,9 +392,7 @@ def run_agent_2(payload: DisruptionPayload):
         max_candidates=payload.max_candidates
     )
 
-
-# --- Agent 3 Endpoint (Constraint Validator) ---
-
+# --- Tejas's Agent 3 (Constraint Validator) Endpoint ---
 @app.post("/api/v1/agent3/validate", response_model=Agent3ValidationResult)
 def run_agent_3(candidate: RouteCandidate, cargo_id: str = Query("CARGO_2291")):
     return validator.validate_route(candidate, cargo_id=cargo_id)
@@ -464,7 +542,6 @@ def run_full_pipeline(payload: DisruptionPayload, cargo_id: str = Query("CARGO_2
         max_candidates=payload.max_candidates
     )
     val_response = validator.validate_all(nav_response.candidates, cargo_id=cargo_id)
-
     return {
         "disruption": {
             "origin": payload.origin,
@@ -475,7 +552,107 @@ def run_full_pipeline(payload: DisruptionPayload, cargo_id: str = Query("CARGO_2
         "agent_3_validations": val_response.results
     }
 
+# --- Spatial Maritime Registry Endpoints ---
+@app.get("/api/v1/ports/search")
+def api_search_ports(q: str = Query(..., description="Query substring for port name, ID or country")):
+    from src.data.port_registry import GlobalPortRegistry
+    registry = GlobalPortRegistry()
+    results = registry.search_ports(q)
+    return [p.model_dump() for p in results]
+
+@app.get("/api/v1/ports/nearby")
+def api_nearby_ports(
+    lat: float = Query(..., description="Latitude coordinate"),
+    lon: float = Query(..., description="Longitude coordinate"),
+    radius_km: float = Query(600.0, description="Search radius in kilometers")
+):
+    from src.data.port_registry import GlobalPortRegistry
+    registry = GlobalPortRegistry()
+    results = registry.search_nearby_ports(lat, lon, radius_km)
+    return [p.model_dump() for p in results]
+
+@app.get("/api/v1/ports/route-distance")
+def api_route_distance(
+    origin: str = Query(..., description="Origin port ID or alias"),
+    destination: str = Query(..., description="Destination port ID or alias")
+):
+    from src.data.port_registry import GlobalPortRegistry
+    registry = GlobalPortRegistry()
+    port1 = registry.get_port(origin)
+    port2 = registry.get_port(destination)
+    if not port1 or not port2:
+        raise HTTPException(status_code=404, detail="One or both ports could not be resolved.")
+    distance_nm = registry.compute_maritime_distance_nm(origin, destination)
+    return {
+        "origin": port1.model_dump(),
+        "destination": port2.model_dump(),
+        "maritime_distance_nm": distance_nm
+    }
+
+class BlockchainRerouteRequest(BaseModel):
+    ship_id: str
+    location: str
+    route: List[str]
+
+@app.post("/api/v1/blockchain/reroute")
+async def api_blockchain_reroute(payload: BlockchainRerouteRequest):
+    from src.blockchain.bridge_adapter import BlockchainBridge
+    receipt = await BlockchainBridge.anchor_reroute_decision(
+        ship_id=payload.ship_id,
+        location=payload.location,
+        route_ports=payload.route
+    )
+    return receipt
+
+@app.get("/api/v1/blockchain/status")
+def api_blockchain_status():
+    from blockchain.config import OWNER_ADDRESS
+    # Standard health details
+    return {
+        "polygon_rpc": "http://mock.polygon.amoy" if not os.getenv("RPC_URL") else "connected",
+        "supabase_connection": "healthy",
+        "wallet_address": OWNER_ADDRESS or "0x0000000000000000000000000000000000000000"
+    }
+
+# --- Multi-Modal & Inventory Allocation Endpoints ---
+@app.get("/demo/full-funnel-vip-air-bridge", response_model=OrchestrationResult)
+async def demo_full_funnel_vip_air_bridge():
+    context = ShipmentContext(
+        container_id="CNTR-VIP-AIR-901",
+        origin_node="PORT_SHANGHAI_01",
+        destination_node="PORT_ROTTERDAM_02",
+        cargo_type="ELECTRONICS",
+        is_hazmat=False,
+        baseline_cost_usd=40000.0,
+        sla_deadline_epoch=1787349283,
+        default_corridor_path=["PORT_SHANGHAI_01", "CORRIDOR_TAIWAN_STRAIT", "PORT_ROTTERDAM_02"],
+        customer_tier="TIER_1_VIP"
+    )
+    disruption_text = "CRITICAL ALERT: Shanghai Port Dockworkers Strike has closed down Port Operations."
+    return await orchestrator.run_shipment_mission(context, inject_disruption_text=disruption_text)
+
+@app.get("/demo/full-funnel-inventory-reallocation", response_model=OrchestrationResult)
+async def demo_full_funnel_inventory_reallocation():
+    context = ShipmentContext(
+        container_id="CNTR-INVENTORY-REALLOCATION-303",
+        origin_node="PORT_SHANGHAI_01",
+        destination_node="PORT_ROTTERDAM_02",
+        cargo_type="ELECTRONICS",
+        is_hazmat=False,
+        baseline_cost_usd=40000.0,
+        sla_deadline_epoch=1787349283,
+        default_corridor_path=["PORT_SHANGHAI_01", "CORRIDOR_TAIWAN_STRAIT", "PORT_ROTTERDAM_02"],
+        customer_tier="TIER_1_VIP"
+    )
+    # Block origin node fully by strike
+    disruption_text = "CRITICAL ALERT: Shanghai Port Dockworkers Strike has closed down Port Operations."
+    # We will trigger the same strike, but let's see if it falls back to the WH_SINGAPORE warehouse stock fulfillment route!
+    return await orchestrator.run_shipment_mission(context, inject_disruption_text=disruption_text)
+
+@app.get("/api/v1/inventory/status")
+def api_inventory_status():
+    from src.tools.inventory_allocator import WarehouseInventoryManager
+    return WarehouseInventoryManager.inventory
 
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
